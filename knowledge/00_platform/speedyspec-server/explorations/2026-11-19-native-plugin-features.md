@@ -85,43 +85,43 @@ A stage sees only the FastCGI params. `StageChain` asks each stage in turn; the 
 
 1. **Features are behaviour of the ported APIs, not separate Rust plugins.** Core already has a home for almost every
    feature and already calls its cache-clearing functions on every change, so invalidation falls out of the ports.
-   See [ADR 0001](../../adr/0001-plugin-features-are-behaviour-of-ported-apis.md).
+   See [ADR-001](../../adr/001-plugin-features-are-behaviour-of-ported-apis.md).
    *Trade-off:* a feature can't ship until the API it belongs to is ported.
 2. **Everything runs in the runtime's Rust side, before PHP.** Chosen by the project owner to see how it runs. See
-   [ADR 0002](../../adr/0002-native-features-run-in-the-runtime.md).
+   [ADR-002](../../adr/002-native-features-run-in-the-runtime.md).
    *Trade-off:* blocked and cached requests still cross FastCGI into the runtime.
 3. **Wait for real Rust ports for data.** Chosen by the project owner. See
-   [ADR 0003](../../adr/0003-native-features-wait-for-api-ports.md).
+   [ADR-003](../../adr/003-native-features-wait-for-api-ports.md).
    *Trade-off:* porting the database, options, permalinks, posts and more comes first.
 4. **Fixed request stages: rules, cache, routing, responders.** See
-   [ADR 0004](../../adr/0004-runtime-request-stages.md).
+   [ADR-004](../../adr/004-runtime-request-stages.md).
    *Trade-off:* static admin-site files never reach the runtime, so the firewall doesn't cover them.
 5. **Core hook names and order stay; new hooks use the project's prefix.** See
-   [ADR 0005](../../adr/0005-core-hooks-stay.md).
+   [ADR-005](../../adr/005-core-hooks-stay.md).
    *Trade-off:* the original plugins' own PHP APIs and option names are not supported.
 6. **A PHP callback registry built at worker start.** Chosen by the project owner. See
-   [ADR 0006](../../adr/0006-php-callback-registry-at-worker-start.md).
+   [ADR-006](../../adr/006-php-callback-registry-at-worker-start.md).
    *Trade-off:* a callback registered only on some requests still sends every such request to PHP.
 7. **Shared stores with file, Redis and database implementations.** Chosen by the project owner; the designer set
-   the defaults. See [ADR 0007](../../adr/0007-shared-stores-file-redis-database.md).
+   the defaults. See [ADR-007](../../adr/007-shared-stores-file-redis-database.md).
    *Trade-off:* three implementations to keep for each store.
 8. **A long-lived background job runner in the runtime.** Chosen by the project owner. See
-   [ADR 0008](../../adr/0008-background-job-runner-in-the-runtime.md).
+   [ADR-008](../../adr/008-background-job-runner-in-the-runtime.md).
    *Trade-off:* one more supervised process per runtime.
 9. **The database port must support several engines, a query builder that parses raw SQL, a unit of work and plain
-   objects.** Stated by the project owner. See [ADR 0009](../../adr/0009-database-port-requirements.md).
+   objects.** Stated by the project owner. See [ADR-009](../../adr/009-database-port-requirements.md).
    *Trade-off:* ReDB has no SQL, so it needs its own repository implementations.
 10. **Firewall and login security as request rules plus login protection.** See
-    [ADR 0010](../../adr/0010-firewall-and-login-security.md).
+    [ADR-010](../../adr/010-firewall-and-login-security.md).
     *Trade-off:* until an auth port exists, lockouts are enforced at the request stage, not in `authenticate`.
 11. **The page cache purges everything first, by tag later.** The designer's call. See
-    [ADR 0011](../../adr/0011-page-cache-coarse-purge-first.md).
+    [ADR-011](../../adr/011-page-cache-coarse-purge-first.md).
     *Trade-off:* every content change empties the whole cache until the post and term ports land.
 12. **Redirects, sitemaps, robots and feeds extend core's own subsystems.** See
-    [ADR 0012](../../adr/0012-redirects-sitemaps-robots-feeds.md).
+    [ADR-012](../../adr/012-redirects-sitemaps-robots-feeds.md).
     *Trade-off:* feed hooks that print need output buffering when a PHP callback is present.
 13. **Images in Rust, with sub-sizes on the job runner.** See
-    [ADR 0013](../../adr/0013-images-in-rust-on-the-job-runner.md).
+    [ADR-013](../../adr/013-images-in-rust-on-the-job-runner.md).
     *Trade-off:* sub-sizes appear after the upload returns, not with it.
 
 Decisions the firewall build added:
@@ -247,19 +247,19 @@ Decisions the firewall build added:
 
 ## References
 
-- [ADR 0001](../../adr/0001-plugin-features-are-behaviour-of-ported-apis.md),
-  [0002](../../adr/0002-native-features-run-in-the-runtime.md),
-  [0003](../../adr/0003-native-features-wait-for-api-ports.md),
-  [0004](../../adr/0004-runtime-request-stages.md),
-  [0005](../../adr/0005-core-hooks-stay.md),
-  [0006](../../adr/0006-php-callback-registry-at-worker-start.md),
-  [0007](../../adr/0007-shared-stores-file-redis-database.md),
-  [0008](../../adr/0008-background-job-runner-in-the-runtime.md),
-  [0009](../../adr/0009-database-port-requirements.md),
-  [0010](../../adr/0010-firewall-and-login-security.md),
-  [0011](../../adr/0011-page-cache-coarse-purge-first.md),
-  [0012](../../adr/0012-redirects-sitemaps-robots-feeds.md),
-  [0013](../../adr/0013-images-in-rust-on-the-job-runner.md)
+- [ADR-001](../../adr/001-plugin-features-are-behaviour-of-ported-apis.md),
+  [0002](../../adr/002-native-features-run-in-the-runtime.md),
+  [0003](../../adr/003-native-features-wait-for-api-ports.md),
+  [0004](../../adr/004-runtime-request-stages.md),
+  [0005](../../adr/005-core-hooks-stay.md),
+  [0006](../../adr/006-php-callback-registry-at-worker-start.md),
+  [0007](../../adr/007-shared-stores-file-redis-database.md),
+  [0008](../../adr/008-background-job-runner-in-the-runtime.md),
+  [0009](../../adr/009-database-port-requirements.md),
+  [0010](../../adr/010-firewall-and-login-security.md),
+  [0011](../../adr/011-page-cache-coarse-purge-first.md),
+  [0012](../../adr/012-redirects-sitemaps-robots-feeds.md),
+  [0013](../../adr/013-images-in-rust-on-the-job-runner.md)
 - [SpeedySpec/speedyspec-server#20](https://github.com/SpeedySpec/speedyspec-server/pull/20), the firewall
 - Source spec: `2026-11-19-native-plugin-features-design.md`
 - Source plan: `2026-11-20-native-firewall.md`

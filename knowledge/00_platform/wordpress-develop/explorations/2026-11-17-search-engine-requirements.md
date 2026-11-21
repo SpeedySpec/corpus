@@ -94,7 +94,7 @@ rel=canonical og:url   sitemap <loc> hreflang  JSON-LD url  redirects
 
 ## Design Decisions
 
-1. **One canonical resolver feeds every output.** Separate plugins cannot keep `rel=canonical`, `og:url`, sitemap entries, hreflang and structured data aligned, and Google weakens disagreeing signals. Sitemaps and robots follow these rules, per [ADR 0012](../../adr/0012-redirects-sitemaps-robots-feeds.md).
+1. **One canonical resolver feeds every output.** Separate plugins cannot keep `rel=canonical`, `og:url`, sitemap entries, hreflang and structured data aligned, and Google weakens disagreeing signals. Sitemaps and robots follow these rules, per [ADR-012](../../adr/012-redirects-sitemaps-robots-feeds.md).
    *Trade-off:* every output depends on one service, so a resolver bug shows up everywhere.
 2. **Robots directives are an open set, emitted as meta and header.** Bing and Amazon give `noarchive` and `nocache` meanings Google does not, and attachments and feeds need the header form. Warn when a URL is both disallowed and `noindex`.
    *Trade-off:* core cannot validate unknown directive names.
@@ -110,7 +110,7 @@ rel=canonical og:url   sitemap <loc> hreflang  JSON-LD url  redirects
 ## Fleet Impact
 
 - The SEO API design in wordpress-develop is built on this research ([SEO API exploration](2026-11-17-seo-api.md)). Its packages now live in [SpeedySpec/speedyspec-api-seo](https://github.com/SpeedySpec/speedyspec-api-seo); confirmed with `gh`.
-- ADR 0012 applies these rules to sitemaps and robots.
+- ADR-012 applies these rules to sitemaps and robots.
 - No other repository is known to depend on it. Unverified beyond that.
 
 ## Open Questions
@@ -161,7 +161,7 @@ rel=canonical og:url   sitemap <loc> hreflang  JSON-LD url  redirects
 ## References
 
 - Source: report "Search engine SEO requirements 2026"; notes `google_search.md`, `bing_and_other_engines.md`, `structured_data_and_social_cards.md`, `ai_answer_engines.md`.
-- [ADR 0012: redirects, sitemaps, robots and feeds](../../adr/0012-redirects-sitemaps-robots-feeds.md)
+- [ADR-012: redirects, sitemaps, robots and feeds](../../adr/012-redirects-sitemaps-robots-feeds.md)
 - [SEO API exploration](2026-11-17-seo-api.md)
 - [SpeedySpec/speedyspec-api-seo](https://github.com/SpeedySpec/speedyspec-api-seo)
 - [Google: technical requirements](https://developers.google.com/search/docs/essentials/technical)

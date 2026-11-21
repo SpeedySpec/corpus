@@ -42,7 +42,7 @@ must keep calling the same function names throughout.
 
 Each WordPress area is a core crate (operations, handlers, outbound ports, domain services) plus one crate per adapter
 technology; a port and its implementation never share a crate. See
-[ADR 0015](../../adr/0015-ports-and-adapters-with-cqrs-use-cases.md).
+[ADR-015](../../adr/015-ports-and-adapters-with-cqrs-use-cases.md).
 
 ### Data Model
 
@@ -63,30 +63,30 @@ technology; a port and its implementation never share a crate. See
 
 ## Design Decisions
 
-1. **Port WordPress to Rust and delete each ported area's PHP.** [ADR 0014](../../adr/0014-port-wordpress-to-rust-and-delete-its-php.md).
+1. **Port WordPress to Rust and delete each ported area's PHP.** [ADR-014](../../adr/014-port-wordpress-to-rust-and-delete-its-php.md).
    *Trade-off:* no fallback once deleted.
 2. **Ports and Adapters, with every function and method a CQRS command or query.** Chosen by the project owner over
-   DDD layers and Clean Architecture rings. [ADR 0015](../../adr/0015-ports-and-adapters-with-cqrs-use-cases.md).
+   DDD layers and Clean Architecture rings. [ADR-015](../../adr/015-ports-and-adapters-with-cqrs-use-cases.md).
    *Trade-off:* hook firing is a listed CQRS exception.
-3. **Rust runs as an extension compiled into the embedded PHP**, not over FFI. [ADR 0016](../../adr/0016-rust-runs-as-an-embedded-php-extension.md).
+3. **Rust runs as an extension compiled into the embedded PHP**, not over FFI. [ADR-016](../../adr/016-rust-runs-as-an-embedded-php-extension.md).
    *Trade-off:* ties the Rust to the embedded build.
 4. **Every port has a PHP twin; binding it to PHP is the override.** Stateful ports are bound only in config, before
-   PHP runs. [ADR 0017](../../adr/0017-php-twins-and-the-override-flag.md). *Trade-off:* a twin per port.
+   PHP runs. [ADR-017](../../adr/017-php-twins-and-the-override-flag.md). *Trade-off:* a twin per port.
 5. **A service container in Rust with Laravel's container's functions**, worker and request lifetimes, and no
-   Laravel compatibility. [ADR 0018](../../adr/0018-a-service-container-in-rust.md).
-6. **Command and query buses with a direct path for hot operations.** [ADR 0019](../../adr/0019-command-and-query-buses.md).
-7. **Rust owns hook state**; the hook globals are proxies. [ADR 0020](../../adr/0020-rust-owns-hook-state.md).
+   Laravel compatibility. [ADR-018](../../adr/018-a-service-container-in-rust.md).
+6. **Command and query buses with a direct path for hot operations.** [ADR-019](../../adr/019-command-and-query-buses.md).
+7. **Rust owns hook state**; the hook globals are proxies. [ADR-020](../../adr/020-rust-owns-hook-state.md).
    As built, `$wp_current_filter` stayed a real PHP array, updated in place; the other three are proxies.
    *Trade-off:* replacing a global wholesale is not seen, and array functions on the proxies throw.
-8. **Recorded compatibility** before deletion. [ADR 0021](../../adr/0021-recorded-compatibility.md).
-9. **FastCGI over a Unix socket** to the workers. [ADR 0022](../../adr/0022-fastcgi-over-a-unix-socket.md).
+8. **Recorded compatibility** before deletion. [ADR-021](../../adr/021-recorded-compatibility.md).
+9. **FastCGI over a Unix socket** to the workers. [ADR-022](../../adr/022-fastcgi-over-a-unix-socket.md).
 10. **Engine crates live in the server workspace and are copied into the CLI**, with a drift check.
-    [ADR 0023](../../adr/0023-shared-crates-in-the-server-workspace.md).
+    [ADR-023](../../adr/023-shared-crates-in-the-server-workspace.md).
 11. **Static PHP 8.5 with every extension WordPress uses**; a missing extension stops the work.
-    [ADR 0024](../../adr/0024-static-php-with-every-wordpress-extension.md).
-12. **Supervised worker pools, one request per worker.** [ADR 0025](../../adr/0025-supervised-php-worker-pools.md).
+    [ADR-024](../../adr/024-static-php-with-every-wordpress-extension.md).
+12. **Supervised worker pools, one request per worker.** [ADR-025](../../adr/025-supervised-php-worker-pools.md).
     Superseded in part: the pool moved into its own binary.
-13. **A writable site directory over read-only releases.** [ADR 0026](../../adr/0026-a-writable-site-directory.md).
+13. **A writable site directory over read-only releases.** [ADR-026](../../adr/026-a-writable-site-directory.md).
 
 ## Implementation Phases
 
@@ -189,19 +189,19 @@ from one PHP crossing per call to none).
 
 ## References
 
-- ADRs: [0014](../../adr/0014-port-wordpress-to-rust-and-delete-its-php.md),
-  [0015](../../adr/0015-ports-and-adapters-with-cqrs-use-cases.md),
-  [0016](../../adr/0016-rust-runs-as-an-embedded-php-extension.md),
-  [0017](../../adr/0017-php-twins-and-the-override-flag.md),
-  [0018](../../adr/0018-a-service-container-in-rust.md),
-  [0019](../../adr/0019-command-and-query-buses.md),
-  [0020](../../adr/0020-rust-owns-hook-state.md),
-  [0021](../../adr/0021-recorded-compatibility.md),
-  [0022](../../adr/0022-fastcgi-over-a-unix-socket.md),
-  [0023](../../adr/0023-shared-crates-in-the-server-workspace.md),
-  [0024](../../adr/0024-static-php-with-every-wordpress-extension.md),
-  [0025](../../adr/0025-supervised-php-worker-pools.md),
-  [0026](../../adr/0026-a-writable-site-directory.md)
+- ADRs: [0014](../../adr/014-port-wordpress-to-rust-and-delete-its-php.md),
+  [0015](../../adr/015-ports-and-adapters-with-cqrs-use-cases.md),
+  [0016](../../adr/016-rust-runs-as-an-embedded-php-extension.md),
+  [0017](../../adr/017-php-twins-and-the-override-flag.md),
+  [0018](../../adr/018-a-service-container-in-rust.md),
+  [0019](../../adr/019-command-and-query-buses.md),
+  [0020](../../adr/020-rust-owns-hook-state.md),
+  [0021](../../adr/021-recorded-compatibility.md),
+  [0022](../../adr/022-fastcgi-over-a-unix-socket.md),
+  [0023](../../adr/023-shared-crates-in-the-server-workspace.md),
+  [0024](../../adr/024-static-php-with-every-wordpress-extension.md),
+  [0025](../../adr/025-supervised-php-worker-pools.md),
+  [0026](../../adr/026-a-writable-site-directory.md)
 - [SpeedySpec/speedyspec-server#4](https://github.com/SpeedySpec/speedyspec-server/pull/4),
   [#5](https://github.com/SpeedySpec/speedyspec-server/pull/5),
   [#9](https://github.com/SpeedySpec/speedyspec-server/pull/9)

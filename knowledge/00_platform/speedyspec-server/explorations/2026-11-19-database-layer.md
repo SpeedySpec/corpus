@@ -70,7 +70,7 @@ execution, and rows mapped back to MySQL's shapes.
 ## Design Decisions
 
 1. **`sqlparser`'s syntax tree is the statement model.** The project owner chose it: it already handles the AST. A
-   home-grown model would have had to grow to everything MySQL accepts. Recorded in [ADR 0009](../../adr/0009-database-port-requirements.md).
+   home-grown model would have had to grow to everything MySQL accepts. Recorded in [ADR-009](../../adr/009-database-port-requirements.md).
    *Trade-off:* the contracts depend on a third-party crate's types.
 2. **Every statement is parsed, on every engine, MySQL included.** The designer proposed a MySQL fast path for
    unchanged raw SQL; the project owner refused it, so every statement has a tree Rust can inspect.
@@ -80,19 +80,19 @@ execution, and rows mapped back to MySQL's shapes.
 4. **Blocking drivers.** The project owner: "it will be slower, but it has to work with PHP." It fits one request per
    worker and the single-threaded Hook API. *Trade-off:* no async I/O; async can come later as separate adapters.
 5. **A native `wpdb` class, not a `db.php` drop-in.** The project owner chose it so `prepare()`, escaping and the
-   helpers exist once, in Rust ([ADR 0014](../../adr/0014-port-wordpress-to-rust-and-delete-its-php.md)).
+   helpers exist once, in Rust ([ADR-014](../../adr/014-port-wordpress-to-rust-and-delete-its-php.md)).
    *Trade-off:* `$wpdb->dbh` is no longer a `mysqli` object; code calling `mysqli_*` on it breaks. Database drop-ins
    are refused with an error naming the file.
 6. **Three store kinds, WordPress's tables on SQL only.** The designer asked whether ReDB could hold a whole site; the
    project owner chose separate kinds instead. *Trade-off:* raw SQL and the builder target SQL stores only.
 7. **One ReDB owner process per site.** ReDB locks its file to one process, so an owner serves workers over a private
    Unix socket (designer's call, approved). *Trade-off:* one local round trip per call; Valkey stays the faster shared
-   choice ([ADR 0007](../../adr/0007-shared-stores-file-redis-database.md), Redis read as Valkey).
+   choice ([ADR-007](../../adr/007-shared-stores-file-redis-database.md), Redis read as Valkey).
 8. **No two-phase commit.** The unit of work commits one transaction per engine and reports a partial commit.
    *Trade-off:* the caller decides what to do after a partial failure.
 9. **Every `wpdb` method a command or query** on the CQRS buses, with request state behind a `WpdbState` port that has
-   a PHP twin ([ADR 0015](../../adr/0015-ports-and-adapters-with-cqrs-use-cases.md),
-   [ADR 0017](../../adr/0017-php-twins-and-the-override-flag.md)). `Query` is a command carrying a result.
+   a PHP twin ([ADR-015](../../adr/015-ports-and-adapters-with-cqrs-use-cases.md),
+   [ADR-017](../../adr/017-php-twins-and-the-override-flag.md)). `Query` is a command carrying a result.
    *Trade-off:* 31 message types to keep in step with WordPress.
 10. **The store contracts have no PHP twins** (designer's call): PHP cannot hold a statement, and no one needs a
     PHP-written SQL engine. *Trade-off:* PHP can replace `WpdbState`, not a store.
@@ -137,7 +137,7 @@ execution, and rows mapped back to MySQL's shapes.
 ## Open Questions
 
 1. **When does the runtime wire the port in?** Settled by the runtime's owner landing the worker changes.
-2. **When is `class-wpdb.php` deleted?** Settled once sites run on the native class ([ADR 0021](../../adr/0021-recorded-compatibility.md)).
+2. **When is `class-wpdb.php` deleted?** Settled once sites run on the native class ([ADR-021](../../adr/021-recorded-compatibility.md)).
 3. **How are parser gaps patched**, upstream or with a vendored dialect? Left to the builder; settled by the first
    gap found in plugin SQL.
 4. **Full-text search** (`MATCH ... AGAINST`) is refused on SQLite and PostgreSQL. Settled by wiring each engine's
@@ -213,11 +213,11 @@ only expired value-and-timeout pairs are removed.
 
 - The Hook API port, the CQRS buses, the container and `speedyspec-compat` (speedyspec-server #4, #5).
 - The embedded PHP runtime and its worker model (speedyspec-server #6).
-- [ADR 0003](../../adr/0003-native-features-wait-for-api-ports.md): the database layer is step 1 of the port order.
+- [ADR-003](../../adr/003-native-features-wait-for-api-ports.md): the database layer is step 1 of the port order.
 
 ## References
 
-- [ADR 0003](../../adr/0003-native-features-wait-for-api-ports.md), [ADR 0007](../../adr/0007-shared-stores-file-redis-database.md), [ADR 0009](../../adr/0009-database-port-requirements.md), [ADR 0014](../../adr/0014-port-wordpress-to-rust-and-delete-its-php.md), [ADR 0015](../../adr/0015-ports-and-adapters-with-cqrs-use-cases.md), [ADR 0017](../../adr/0017-php-twins-and-the-override-flag.md), [ADR 0021](../../adr/0021-recorded-compatibility.md)
+- [ADR-003](../../adr/003-native-features-wait-for-api-ports.md), [ADR-007](../../adr/007-shared-stores-file-redis-database.md), [ADR-009](../../adr/009-database-port-requirements.md), [ADR-014](../../adr/014-port-wordpress-to-rust-and-delete-its-php.md), [ADR-015](../../adr/015-ports-and-adapters-with-cqrs-use-cases.md), [ADR-017](../../adr/017-php-twins-and-the-override-flag.md), [ADR-021](../../adr/021-recorded-compatibility.md)
 - [Options API port exploration](2026-11-19-options-api-port.md)
 - [Deferred findings](../../../../deferred/speedyspec-server/README.md)
 - [SpeedySpec/speedyspec-server](https://github.com/SpeedySpec/speedyspec-server): [#12](https://github.com/SpeedySpec/speedyspec-server/pull/12), [#13](https://github.com/SpeedySpec/speedyspec-server/pull/13), [#14](https://github.com/SpeedySpec/speedyspec-server/pull/14), [#16](https://github.com/SpeedySpec/speedyspec-server/pull/16), [#17](https://github.com/SpeedySpec/speedyspec-server/pull/17), [#18](https://github.com/SpeedySpec/speedyspec-server/pull/18), [#22](https://github.com/SpeedySpec/speedyspec-server/pull/22), [#23](https://github.com/SpeedySpec/speedyspec-server/pull/23), [#25](https://github.com/SpeedySpec/speedyspec-server/pull/25), [#26](https://github.com/SpeedySpec/speedyspec-server/pull/26)

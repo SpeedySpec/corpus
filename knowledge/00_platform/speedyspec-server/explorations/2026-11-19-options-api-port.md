@@ -67,7 +67,7 @@ left behind.
 1. **Port the object cache here, as its own area.** Every read path goes through it (designer's call).
    *Trade-off:* a second area, with its own native PHP surface and compatibility catalogue, inside this port.
 2. **Build on neither PHP package set as code.** Their names informed the Rust names; both are deleted with
-   `option.php` (designer's call; [ADR 0014](../../adr/0014-port-wordpress-to-rust-and-delete-its-php.md)).
+   `option.php` (designer's call; [ADR-014](../../adr/014-port-wordpress-to-rust-and-delete-its-php.md)).
    *Trade-off:* working PHP use cases are thrown away.
 3. **The first cache level holds values, not bytes** (designer's call). A PHP `wp_cache_set` then `wp_cache_get` never
    serializes, and closures can be cached. *Trade-off:* PHP values must be released at request end, before PHP shuts
@@ -83,8 +83,8 @@ left behind.
    cache invalidation only after a successful commit. PHP functions keep write-at-once.
    *Trade-off:* two write paths to keep equal.
 8. **Unported WordPress sits behind ports** with PHP and Rust adapters
-   ([ADR 0015](../../adr/0015-ports-and-adapters-with-cqrs-use-cases.md),
-   [ADR 0017](../../adr/0017-php-twins-and-the-override-flag.md)). A Rust write of a core option name that needs
+   ([ADR-015](../../adr/015-ports-and-adapters-with-cqrs-use-cases.md),
+   [ADR-017](../../adr/017-php-twins-and-the-override-flag.md)). A Rust write of a core option name that needs
    `sanitize_option()` must go to PHP. *Trade-off:* the project's own options must use prefixed names to stay native.
    Building revealed a sixth port the spec lacked, for the setting groups `register_setting()` fills.
 9. **Persistent means routed** (phase 3 decision). The object cache is persistent exactly when the site routes the
@@ -130,7 +130,7 @@ left behind.
 
 1. **When does the runtime wire the areas in?** Settled by the worker changes landing.
 2. **When are `option.php` and the object-cache PHP files deleted?** After wiring, per
-   [ADR 0021](../../adr/0021-recorded-compatibility.md); `option.php` then keeps only user settings and
+   [ADR-021](../../adr/021-recorded-compatibility.md); `option.php` then keeps only user settings and
    `register_initial_settings()`.
 3. **User settings** wait for the auth port. Settled when that port exists.
 4. **`sanitize_option()`** stays in PHP until `formatting.php` is ported. Settled by that port.
@@ -194,11 +194,11 @@ next request of another with no SQL, on the SQL, file and Valkey second levels.
 - The database layer and `wpdb` port (speedyspec-server #12, #13), for `wp_options` access and the `query` hook.
 - The Caching Store and the NoSQL and file stores (#14, #18), for the persistent second level.
 - The Hook API, CQRS buses, container and recorded compatibility (#4, #5).
-- [ADR 0003](../../adr/0003-native-features-wait-for-api-ports.md): options is the second half of step 1.
+- [ADR-003](../../adr/003-native-features-wait-for-api-ports.md): options is the second half of step 1.
 
 ## References
 
-- [ADR 0003](../../adr/0003-native-features-wait-for-api-ports.md), [ADR 0009](../../adr/0009-database-port-requirements.md), [ADR 0014](../../adr/0014-port-wordpress-to-rust-and-delete-its-php.md), [ADR 0015](../../adr/0015-ports-and-adapters-with-cqrs-use-cases.md), [ADR 0017](../../adr/0017-php-twins-and-the-override-flag.md), [ADR 0021](../../adr/0021-recorded-compatibility.md)
+- [ADR-003](../../adr/003-native-features-wait-for-api-ports.md), [ADR-009](../../adr/009-database-port-requirements.md), [ADR-014](../../adr/014-port-wordpress-to-rust-and-delete-its-php.md), [ADR-015](../../adr/015-ports-and-adapters-with-cqrs-use-cases.md), [ADR-017](../../adr/017-php-twins-and-the-override-flag.md), [ADR-021](../../adr/021-recorded-compatibility.md)
 - [Database layer exploration](2026-11-19-database-layer.md)
 - [Deferred findings](../../../../deferred/speedyspec-server/README.md)
 - [SpeedySpec/speedyspec-server](https://github.com/SpeedySpec/speedyspec-server): [#14](https://github.com/SpeedySpec/speedyspec-server/pull/14), [#15](https://github.com/SpeedySpec/speedyspec-server/pull/15), [#19](https://github.com/SpeedySpec/speedyspec-server/pull/19), [#22](https://github.com/SpeedySpec/speedyspec-server/pull/22), [#25](https://github.com/SpeedySpec/speedyspec-server/pull/25)

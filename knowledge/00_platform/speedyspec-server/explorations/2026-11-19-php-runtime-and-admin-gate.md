@@ -68,7 +68,7 @@ had not signed in. Maintenance during upgrades, and an outage, had no defined an
 
 1. **The PHP runtime is a separate binary, released like any app.** A runtime release never needs a server release.
    *Trade-off:* a versioned contract between the two binaries; both sides refuse an unknown major.
-   [ADR 0025](../../adr/0025-supervised-php-worker-pools.md) records this as superseding where its pools ran.
+   [ADR-025](../../adr/025-supervised-php-worker-pools.md) records this as superseding where its pools ran.
 2. **The admin API is PHP, its own app, apart from the front-end API.** Admin areas depend on plugins, and it acts
    with elevated privileges. The project owner reversed the server core's "admin API is Rust only".
    *Trade-off:* the server now depends on a PHP app to answer its gate questions.
@@ -193,8 +193,8 @@ Building changed the design in these ways:
 
 ## References
 
-- [ADR 0022](../../adr/0022-fastcgi-over-a-unix-socket.md), [ADR 0025](../../adr/0025-supervised-php-worker-pools.md),
-  [ADR 0026](../../adr/0026-a-writable-site-directory.md)
+- [ADR-022](../../adr/022-fastcgi-over-a-unix-socket.md), [ADR-025](../../adr/025-supervised-php-worker-pools.md),
+  [ADR-026](../../adr/026-a-writable-site-directory.md)
 - [SpeedySpec/speedyspec-server#6](https://github.com/SpeedySpec/speedyspec-server/pull/6),
   [#10](https://github.com/SpeedySpec/speedyspec-server/pull/10),
   [#11](https://github.com/SpeedySpec/speedyspec-server/pull/11)
