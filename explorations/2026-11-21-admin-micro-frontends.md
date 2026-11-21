@@ -87,6 +87,12 @@ Owner answers (2026-11-21):
 - **Compiled plugins.** Plugin developers ship precompiled render functions (compiled Vue, or JSX
   for React), never template strings, so the browser runs no compiler for them. The shell itself
   stays without a build step, so its own template strings, and with them `'unsafe-eval'`, remain.
+- **One React.** The shell vendors one ES-module React, as it does Vue, and maps `react`,
+  `react-dom` and `@wordpress/element` as reserved specifiers that plugins cannot remap. Every
+  React plugin shares that copy.
+- **The capability route.** WordPress serves plugin admin module files through a `wp-admin/v1`
+  route that checks the session and the capability of whatever registered the module, and sends
+  them as private, per-cookie responses. The import map points at that route.
 
 ### Architecture
 
@@ -114,7 +120,7 @@ There are two isolation tiers, and PHP chooses one per registration:
 | Tier | Mount | Shared runtime | CSS | For |
 | --- | --- | --- | --- | --- |
 | `module` (default) | compiled Vue component | the shell's Vue | cascade layers, naming | core, and plugins written in Vue |
-| `element` | custom element, or a `mount( el, ctx )` function | the shell's React, if the shell provides one | Shadow DOM with the admin sheets adopted | React and other plugins; pages and widgets |
+| `element` | custom element, or a `mount( el, ctx )` function | the shell's single React | Shadow DOM with the admin sheets adopted | React and other plugins; pages and widgets |
 
 The single component that resolves contracts builds the host for the tier: a Vue host or an
 element host. Each host adapts its tier to the same contract.
@@ -145,8 +151,10 @@ WordPress's recovery mode stores paused extensions.
   custom element or a `mount( el, ctx )` function that returns an unmount function. The shell
   warns about, and may later refuse, a plugin component that carries a `template` string.
 - **Module files:** the proxy serves a plugin module only to a session whose manifest lists it.
-  WordPress refuses direct requests for it. How it refuses is open: a route that checks the
-  capability and streams the file, or a web-server rule plus the proxy's secret header.
+  In WordPress, a `wp-admin/v1` route checks the session and the capability of the registration,
+  then streams the file privately. It serves the module's whole directory, so the module's
+  relative imports resolve under the route too. The import map points at the route rather than
+  at `/wp-content`.
 - **Data:** every call goes through the shell's single API client, which holds and renews the
   REST nonce. Plugin writes go to the plugin's own REST namespace and do not fire admin hooks.
 - **Frame:** plugins get the frame channel (menu counts, document title) through an injected
@@ -205,7 +213,7 @@ Client error reports, pause storage in PHP, router filtering, safe mode and noti
 
 ### Phase 3: The element tier, with React
 
-An element host, the lifecycle adapter, adopted admin stylesheets, how React is provided, and a
+An element host, the lifecycle adapter, adopted admin stylesheets, the vendored shared React, and a
 compiled React example plugin with end-to-end tests. 4 to 7 days.
 
 ### Phase 4: Fall back to the classic screen
@@ -236,15 +244,19 @@ Established by reading the code. Nothing was run.
 
 ## Open Questions
 
-Answered on 2026-11-21: trust (trusted, no sandbox), React (supported), exposure (restricted by
-the proxy and by WordPress) and compiling (plugins ship compiled render functions). Still open:
+Answered on 2026-11-21:
 
-1. **Providing React.** Should the shell vendor one ES-module React and map `react`, `react-dom`
-   and `@wordpress/element` as reserved specifiers, as it does Vue? Or should each plugin bundle
-   its own? Sharing one copy is recommended: hooks break when two copies render one tree.
-2. **Restricting files in WordPress.** Should WordPress serve module files through a route that
-   checks the capability, or through a web-server rule plus the proxy's secret header? The route
-   is recommended first.
+- trust: plugins are trusted, so there is no sandbox tier;
+- React: supported, through one shared copy;
+- exposure: restricted by the proxy and by a capability route in WordPress;
+- compiling: plugins ship compiled render functions.
+
+Still open:
+
+1. **Direct file requests.** Should the web server also refuse direct `/wp-content` requests for
+   registered admin module files, now that the capability route is how modules load?
+2. **React upgrades.** Should a new major version of React count as a new router API version, as
+   question 4 asks for Vue?
 3. **Core templates.** Keep compiling the shell's own templates in the browser, which keeps
    `'unsafe-eval'`, or precompile core too, which means a build step for the shell?
 4. **Vue upgrades.** Should a new major version of Vue count as a new router API version?
