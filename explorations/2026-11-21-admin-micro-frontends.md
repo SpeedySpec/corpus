@@ -98,6 +98,21 @@ Owner answers (2026-11-21):
 - **The capability route.** WordPress serves plugin admin module files through a `wp-admin/v1`
   route that checks the session and the capability of whatever registered the module, and sends
   them as private, per-cookie responses. The import map points at that route.
+- **Direct requests are refused by the security hooks.** A direct request for a registered admin
+  module file under `/wp-content` is refused by the platform's security hooks, which restrict
+  access to that directory, rather than by a separate web-server rule.
+- **SemVer for the admin.** A new major version of Vue or React is a breaking change, so it is a
+  new major version of the admin API. Plugins declare the admin versions they support as a SemVer
+  range, and the shell refuses a module whose range it does not meet.
+- **The default namespace for writes.** Plugin writes go to the plugin's own REST namespace, not
+  under `wp-admin/v1`.
+- **Recovery is for anyone with the role.** Any user whose role grants a plugin's admin
+  capability may pause or resume that plugin's admin modules.
+- **No automatic fallback.** A failing native plugin page shows the failure screen. It does not
+  fall back to the plugin's classic screen.
+- **Core bundles are the goal.** Groups of core screens will eventually deploy separately, so a
+  product built on the admin carries only the screens it needs. A forum built on the admin, for
+  example, has no Posts screens unless the blog is included.
 
 ### Architecture
 
@@ -111,6 +126,12 @@ The three seams do different jobs:
   settings fields and kit stay in the shell's shared tier with SemVer contracts. Deploying them
   apart would add version skew and gain nothing.
 - **Contracts are the extension seam.** Replacement and slot hooks work per contract id.
+- **Bundles group screens into products, later.** A bundle (Content, Comments, Users, Extend,
+  Tools, Network, and products such as a forum) is a set of page contracts with their
+  implementations and `wp-admin/v1` controllers, released under its own SemVer version. Shared
+  parts stay in the shell. A bundle registers its screens in PHP the way a plugin does. That keeps
+  the anti-goal "screens hardcoded in the skeleton" and means a product leaves a bundle out by not
+  installing it.
 
 In Hexagonal terms:
 
@@ -140,16 +161,16 @@ The manifest's page entry and its slot and replacement entries gain these fields
 - `capability`: on replacement and slot registrations, filtered in PHP;
 - the module URLs each user may load, which the proxy keeps in its session cache to restrict
   module files;
-- a `legacy` descriptor beside `module`, when a plugin registers both a native module and a
-  classic callback.
 
-To pause a plugin's admin modules, PHP stores a pause per user and per plugin, in the same way
-WordPress's recovery mode stores paused extensions.
+To pause a plugin's admin modules, PHP stores the pause per plugin, in the same way WordPress's
+recovery mode stores paused extensions. Any user whose role grants the plugin's admin capability
+may set or clear it.
 
 ### Interfaces
 
 - **PHP:** the three registration functions keep their signatures and accept these new arguments:
-  `isolation`, `requires`, `capability`, `implements`, and a fallback to the classic callback.
+  `isolation`, `requires` (including the supported admin version range), `capability` and
+  `implements`.
   Page data still comes from `data_callback`. Action-specific nonces travel in that data.
 - **Module:** the default export (a compiled Vue component), `contract`, `implementsContract`,
   and a new `requires` export that the shell checks before mounting. Element-tier modules export a
@@ -159,7 +180,7 @@ WordPress's recovery mode stores paused extensions.
   In WordPress, a `wp-admin/v1` route checks the session and the capability of the registration,
   then streams the file privately. It serves the module's whole directory, so the module's
   relative imports resolve under the route too. The import map points at the route rather than
-  at `/wp-content`.
+  at `/wp-content`. The platform's security hooks refuse direct requests for those files.
 - **Data:** every call goes through the shell's single API client, which holds and renews the
   REST nonce. Plugin writes go to the plugin's own REST namespace and do not fire admin hooks.
 - **Frame:** plugins get the frame channel (menu counts, document title) through an injected
@@ -180,7 +201,7 @@ WordPress's recovery mode stores paused extensions.
 | Coarse answers made for one screen | Remote Facade with Data Transfer Objects (PoEAA) | Each `wp-admin/v1` controller, the manifest's page entry |
 | One client for all calls to WordPress | Gateway (PoEAA) | The shell's API client |
 | A replacement stands in for the default implementation | Strategy (GoF) | Contract resolution |
-| Order of resolution: replacement, default, classic screen, failure | Chain of Responsibility (GoF) | Contract resolution and the page host |
+| Order of resolution: replacement, default, failure | Chain of Responsibility (GoF) | Contract resolution and the page host |
 | A failed module renders nothing | Null Object (GoF) | The loader's module-failure component |
 | A host built for each tier | Factory Method and Adapter (GoF) | The component that resolves contracts |
 | Answers update the frame through one channel | Mediator (GoF) | The frame channel |
@@ -224,10 +245,10 @@ Client error reports, pause storage in PHP, router filtering, safe mode and noti
 An element host, the lifecycle adapter, adopted admin stylesheets, the vendored shared React, and a
 compiled React example plugin with end-to-end tests. 4 to 7 days.
 
-### Phase 4: Fall back to the classic screen
+### Phase 4: Message protocol for classic screens (optional)
 
-Plugin pages registered both ways fall back to the classic screen when the native page fails, and
-classic screens may get the optional message protocol. 3 to 5 days.
+Classic plugin screens may get the small message protocol to update the native frame. There is no
+automatic fallback to classic screens. 1 to 2 days.
 
 ### Phase 5: Content Security Policy
 
@@ -243,7 +264,14 @@ container image, unit tests that run against compiled components (or keep the co
 only), and a check that fails if a shipped component still carries a `template` string. 5 to 8
 days.
 
-In total, about 4.5 to 7 weeks.
+In total, about 4 to 6.5 weeks.
+
+### Phase 7: Core bundles (later)
+
+Split core screens into bundles, each with its own version and its own registration in PHP, so
+that a product such as a forum installs only the bundles it needs. Part of this is deciding how
+the proxy and the session's `components` list learn which bundles a site has. Not estimated here.
+It needs its own exploration once the cut-over is done.
 
 ## Fleet Impact
 
@@ -266,22 +294,23 @@ Answered on 2026-11-21:
 - trust: plugins are trusted, so there is no sandbox tier;
 - React: supported, through one shared copy;
 - exposure: restricted by the proxy and by a capability route in WordPress;
-- compiling: plugins ship compiled render functions, and core is precompiled too.
+- compiling: plugins ship compiled render functions, and core is precompiled too;
+- direct file requests: refused by the platform's security hooks;
+- Vue and React majors: each is a major version of the admin API, and plugins declare SemVer
+  ranges;
+- plugin writes: the plugin's own namespace;
+- recovery: anyone whose role grants the plugin's admin capability;
+- fallback: none;
+- core bundles: the eventual goal.
 
 Still open:
 
-1. **Direct file requests.** Should the web server also refuse direct `/wp-content` requests for
-   registered admin module files, now that the capability route is how modules load?
-2. **React upgrades.** Should a new major version of React count as a new router API version, as
-   question 3 asks for Vue?
-3. **Vue upgrades.** Should a new major version of Vue count as a new router API version?
-4. **Core bundles.** Should groups of core screens ever deploy apart from each other, or stay in
-   one site? This exploration recommends one site.
-5. **Plugin namespace.** Plugin writes in the plugin's own REST namespace, or in an extension
-   namespace under `wp-admin/v1`, which carries admin context on reads?
-6. **Recovery.** Who may pause and resume a plugin's admin modules?
-7. **Fallback.** Should a failing native plugin page fall back to its classic screen
-   automatically?
+1. **Which security hooks.** Are the security hooks that refuse `/wp-content` requests the
+   server's access rules and admin gate, or hooks in the PHP API?
+2. **Scope of a pause.** Does pausing a plugin's admin modules apply to every user, or only to
+   the user who paused it?
+3. **Bundle boundaries.** Which screens belong to which bundle, and how a site tells the admin
+   which bundles it has. Both are for the bundle exploration.
 
 ## Spike Findings
 
@@ -316,7 +345,7 @@ No spikes were run. What reading the code established:
   media grid.
 - A bundler for the shell. Its build compiles templates only.
 - A security boundary between plugins and the shell.
-- Running the admin as several independently deployed core sites.
+- Core bundles in this work. They are the goal, but they come after the cut-over.
 - Changing the public `wp/v2` REST API.
 
 ## Alternatives Considered
