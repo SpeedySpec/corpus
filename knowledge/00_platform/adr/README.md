@@ -5,7 +5,7 @@ Decisions about SpeedySpec's design, one per file, so the reasons outlive the co
 ## Layout
 
 ```
-adr/
+knowledge/00_platform/adr/
 ├── README.md              This file, and the index
 └── NNNN-<title>.md        One decision per file, numbered in the order recorded
 ```
