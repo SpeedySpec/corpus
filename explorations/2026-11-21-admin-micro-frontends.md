@@ -85,8 +85,19 @@ Owner answers (2026-11-21):
   proxy serves a module only to a session whose manifest lists it. WordPress refuses direct
   requests for those files.
 - **Compiled plugins.** Plugin developers ship precompiled render functions (compiled Vue, or JSX
-  for React), never template strings, so the browser runs no compiler for them. The shell itself
-  stays without a build step, so its own template strings, and with them `'unsafe-eval'`, remain.
+  for React), never template strings, so the browser runs no compiler for them.
+- **One React.** The shell vendors one ES-module React, as it does Vue, and maps `react`,
+  `react-dom` and `@wordpress/element` as reserved specifiers that plugins cannot remap. Every
+  React plugin shares that copy.
+- **Core is precompiled too.** The shell's own components are compiled ahead, like plugin modules.
+  That gives the shell a build step, which the owner accepted on purpose for speed. The shell then
+  vendors Vue's runtime-only build without the template compiler, and the Content Security Policy
+  can drop `'unsafe-eval'`. The build step compiles templates only. Modules stay native ES modules,
+  combined at run time through the import map, so plugins still install with no rebuild of the
+  admin.
+- **The capability route.** WordPress serves plugin admin module files through a `wp-admin/v1`
+  route that checks the session and the capability of whatever registered the module, and sends
+  them as private, per-cookie responses. The import map points at that route.
 
 ### Architecture
 
@@ -114,7 +125,7 @@ There are two isolation tiers, and PHP chooses one per registration:
 | Tier | Mount | Shared runtime | CSS | For |
 | --- | --- | --- | --- | --- |
 | `module` (default) | compiled Vue component | the shell's Vue | cascade layers, naming | core, and plugins written in Vue |
-| `element` | custom element, or a `mount( el, ctx )` function | the shell's React, if the shell provides one | Shadow DOM with the admin sheets adopted | React and other plugins; pages and widgets |
+| `element` | custom element, or a `mount( el, ctx )` function | the shell's single React | Shadow DOM with the admin sheets adopted | React and other plugins; pages and widgets |
 
 The single component that resolves contracts builds the host for the tier: a Vue host or an
 element host. Each host adapts its tier to the same contract.
@@ -145,8 +156,10 @@ WordPress's recovery mode stores paused extensions.
   custom element or a `mount( el, ctx )` function that returns an unmount function. The shell
   warns about, and may later refuse, a plugin component that carries a `template` string.
 - **Module files:** the proxy serves a plugin module only to a session whose manifest lists it.
-  WordPress refuses direct requests for it. How it refuses is open: a route that checks the
-  capability and streams the file, or a web-server rule plus the proxy's secret header.
+  In WordPress, a `wp-admin/v1` route checks the session and the capability of the registration,
+  then streams the file privately. It serves the module's whole directory, so the module's
+  relative imports resolve under the route too. The import map points at the route rather than
+  at `/wp-content`.
 - **Data:** every call goes through the shell's single API client, which holds and renews the
   REST nonce. Plugin writes go to the plugin's own REST namespace and do not fire admin hooks.
 - **Frame:** plugins get the frame channel (menu counts, document title) through an injected
@@ -174,9 +187,12 @@ WordPress's recovery mode stores paused extensions.
 
 Other decisions:
 
-- **No build step for the shell.** Plugin authors compile their own modules (an owner decision),
-  but the shell and the way modules are combined stay free of a build. Module Federation is
-  rejected because it would put a build into the shell. Import maps (including
+- **A template-only build, no bundler.** The shell gains one build step: a small script that
+  compiles each component's template into a render function in place, file by file, with Vue's
+  own compiler. Its output is still one native ES module per source file. Combining modules stays
+  a run-time job of the import map, so a plugin installs with no rebuild of the admin. Module
+  Federation is still rejected: it would add a bundler and its run-time federation layer, and
+  moving code around is a job the import map already does. Import maps (including
   `scopes`, should a plugin ever need a different version of a dependency) give most of what
   sharing dependencies offers.
 - **The single-spa library is not adopted.** It would bring a second routing authority beside the
@@ -205,7 +221,7 @@ Client error reports, pause storage in PHP, router filtering, safe mode and noti
 
 ### Phase 3: The element tier, with React
 
-An element host, the lifecycle adapter, adopted admin stylesheets, how React is provided, and a
+An element host, the lifecycle adapter, adopted admin stylesheets, the vendored shared React, and a
 compiled React example plugin with end-to-end tests. 4 to 7 days.
 
 ### Phase 4: Fall back to the classic screen
@@ -215,10 +231,19 @@ classic screens may get the optional message protocol. 3 to 5 days.
 
 ### Phase 5: Content Security Policy
 
-Report-only first, then the directives that cost nothing. `'unsafe-eval'` stays while the shell
-compiles its own templates. 1 to 2 days, then measuring.
+Report-only first, then the directives that cost nothing, then `script-src` without
+`'unsafe-eval'` once phase 6 has removed the compiler. Inline code from classic plugin output
+still needs a nonce or `'unsafe-inline'` until that path shrinks after the cut-over. 1 to 2 days,
+then measuring.
 
-In total, about 3.5 to 5.5 weeks.
+### Phase 6: Precompile the shell
+
+The template build script, a switch to Vue's runtime-only build, a build stage in the admin's
+container image, unit tests that run against compiled components (or keep the compiler in tests
+only), and a check that fails if a shipped component still carries a `template` string. 5 to 8
+days.
+
+In total, about 4.5 to 7 weeks.
 
 ## Fleet Impact
 
@@ -236,24 +261,26 @@ Established by reading the code. Nothing was run.
 
 ## Open Questions
 
-Answered on 2026-11-21: trust (trusted, no sandbox), React (supported), exposure (restricted by
-the proxy and by WordPress) and compiling (plugins ship compiled render functions). Still open:
+Answered on 2026-11-21:
 
-1. **Providing React.** Should the shell vendor one ES-module React and map `react`, `react-dom`
-   and `@wordpress/element` as reserved specifiers, as it does Vue? Or should each plugin bundle
-   its own? Sharing one copy is recommended: hooks break when two copies render one tree.
-2. **Restricting files in WordPress.** Should WordPress serve module files through a route that
-   checks the capability, or through a web-server rule plus the proxy's secret header? The route
-   is recommended first.
-3. **Core templates.** Keep compiling the shell's own templates in the browser, which keeps
-   `'unsafe-eval'`, or precompile core too, which means a build step for the shell?
-4. **Vue upgrades.** Should a new major version of Vue count as a new router API version?
-5. **Core bundles.** Should groups of core screens ever deploy apart from each other, or stay in
+- trust: plugins are trusted, so there is no sandbox tier;
+- React: supported, through one shared copy;
+- exposure: restricted by the proxy and by a capability route in WordPress;
+- compiling: plugins ship compiled render functions, and core is precompiled too.
+
+Still open:
+
+1. **Direct file requests.** Should the web server also refuse direct `/wp-content` requests for
+   registered admin module files, now that the capability route is how modules load?
+2. **React upgrades.** Should a new major version of React count as a new router API version, as
+   question 3 asks for Vue?
+3. **Vue upgrades.** Should a new major version of Vue count as a new router API version?
+4. **Core bundles.** Should groups of core screens ever deploy apart from each other, or stay in
    one site? This exploration recommends one site.
-6. **Plugin namespace.** Plugin writes in the plugin's own REST namespace, or in an extension
+5. **Plugin namespace.** Plugin writes in the plugin's own REST namespace, or in an extension
    namespace under `wp-admin/v1`, which carries admin context on reads?
-7. **Recovery.** Who may pause and resume a plugin's admin modules?
-8. **Fallback.** Should a failing native plugin page fall back to its classic screen
+6. **Recovery.** Who may pause and resume a plugin's admin modules?
+7. **Fallback.** Should a failing native plugin page fall back to its classic screen
    automatically?
 
 ## Spike Findings
@@ -273,6 +300,8 @@ No spikes were run. What reading the code established:
 
 - A plugin can ship a compiled native admin page, slot entry or replacement, in Vue or in React,
   and can declare the contract, kit and API versions it needs.
+- No shipped component, core or plugin, is compiled in the browser, and the shell's script policy
+  needs no `'unsafe-eval'`.
 - No one but a signed-in admin user whose manifest lists a plugin module can fetch it, whether
   through the proxy or from WordPress directly.
 - A plugin that fails to load, is incompatible, throws while rendering or breaks the page at import
@@ -285,7 +314,7 @@ No spikes were run. What reading the code established:
 
 - Rebuilding hosted screens: the editors, Customizer, Connectors, Font Library, Patterns and the
   media grid.
-- A build step for the shell. Plugin authors compile their modules; the shell does not.
+- A bundler for the shell. Its build compiles templates only.
 - A security boundary between plugins and the shell.
 - Running the admin as several independently deployed core sites.
 - Changing the public `wp/v2` REST API.
