@@ -98,16 +98,17 @@ Owner answers (2026-11-21):
 - **The capability route.** WordPress serves plugin admin module files through a `wp-admin/v1`
   route that checks the session and the capability of whatever registered the module, and sends
   them as private, per-cookie responses. The import map points at that route.
-- **Direct requests are refused by the security hooks.** A direct request for a registered admin
-  module file under `/wp-content` is refused by the platform's security hooks, which restrict
-  access to that directory, rather than by a separate web-server rule.
+- **Direct requests are refused by the admin gate.** A direct request for a registered admin
+  module file under `/wp-content` is refused by speedyspec-server's admin gate, which restricts
+  access to that directory, rather than by a separate web-server rule or a hook in PHP.
 - **SemVer for the admin.** A new major version of Vue or React is a breaking change, so it is a
   new major version of the admin API. Plugins declare the admin versions they support as a SemVer
   range, and the shell refuses a module whose range it does not meet.
 - **The default namespace for writes.** Plugin writes go to the plugin's own REST namespace, not
   under `wp-admin/v1`.
-- **Recovery is for anyone with the role.** Any user whose role grants a plugin's admin
-  capability may pause or resume that plugin's admin modules.
+- **Recovery is for anyone with the role, and a pause is site-wide.** Any user whose role grants
+  a plugin's admin capability may pause or resume that plugin's admin modules. A pause applies to
+  every user, not only to the user who set it.
 - **No automatic fallback.** A failing native plugin page shows the failure screen. It does not
   fall back to the plugin's classic screen.
 - **Core bundles are the goal.** Groups of core screens will eventually deploy separately, so a
@@ -163,8 +164,9 @@ The manifest's page entry and its slot and replacement entries gain these fields
   module files;
 
 To pause a plugin's admin modules, PHP stores the pause per plugin, in the same way WordPress's
-recovery mode stores paused extensions. Any user whose role grants the plugin's admin capability
-may set or clear it.
+recovery mode stores paused extensions, but site-wide: one pause leaves the plugin's modules out
+for every user until it is cleared. Any user whose role grants the plugin's admin capability may
+set or clear it.
 
 ### Interfaces
 
@@ -180,15 +182,15 @@ may set or clear it.
   In WordPress, a `wp-admin/v1` route checks the session and the capability of the registration,
   then streams the file privately. It serves the module's whole directory, so the module's
   relative imports resolve under the route too. The import map points at the route rather than
-  at `/wp-content`. The platform's security hooks refuse direct requests for those files.
+  at `/wp-content`. speedyspec-server's admin gate refuses direct requests for those files.
 - **Data:** every call goes through the shell's single API client, which holds and renews the
   REST nonce. Plugin writes go to the plugin's own REST namespace and do not fire admin hooks.
 - **Frame:** plugins get the frame channel (menu counts, document title) through an injected
   port. Classic plugin screens may get a small, versioned `postMessage` protocol that checks the
   origin and the source window.
 - **Recovery:** `POST wp-admin/v1/client-errors` reports an error raised on the first mount after
-  a plugin module loads. PHP decides whether to pause, and the router leaves paused modules out
-  and says so in a notice that offers to resume them. A safe-mode flag, also decided in PHP,
+  a plugin module loads. PHP decides whether to pause, the pause applies to every user, and the
+  router leaves paused modules out and says so in a notice that offers to resume them. A safe-mode flag, also decided in PHP,
   leaves out every plugin module.
 
 ## Design Decisions
@@ -295,21 +297,18 @@ Answered on 2026-11-21:
 - React: supported, through one shared copy;
 - exposure: restricted by the proxy and by a capability route in WordPress;
 - compiling: plugins ship compiled render functions, and core is precompiled too;
-- direct file requests: refused by the platform's security hooks;
+- direct file requests: refused by speedyspec-server's admin gate;
 - Vue and React majors: each is a major version of the admin API, and plugins declare SemVer
   ranges;
 - plugin writes: the plugin's own namespace;
-- recovery: anyone whose role grants the plugin's admin capability;
+- recovery: anyone whose role grants the plugin's admin capability, and a pause applies to every
+  user;
 - fallback: none;
 - core bundles: the eventual goal.
 
 Still open:
 
-1. **Which security hooks.** Are the security hooks that refuse `/wp-content` requests the
-   server's access rules and admin gate, or hooks in the PHP API?
-2. **Scope of a pause.** Does pausing a plugin's admin modules apply to every user, or only to
-   the user who paused it?
-3. **Bundle boundaries.** Which screens belong to which bundle, and how a site tells the admin
+1. **Bundle boundaries.** Which screens belong to which bundle, and how a site tells the admin
    which bundles it has. Both are for the bundle exploration.
 
 ## Spike Findings
