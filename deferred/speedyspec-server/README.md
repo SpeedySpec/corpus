@@ -107,3 +107,4 @@ Left out, because they were fixed or ruled on:
 | [tests-and-deploy.md](tests-and-deploy.md) | `speedyspec-server` and `-server-infra-fs` tests, `deploy/kubernetes` | 4 |
 | [kses.md](kses.md) | `speedyspec-wp-kses*`, `-wp-html-syntax` | 6, plus 2 speed goals |
 | [text-formatting.md](text-formatting.md) | `speedyspec-wp-text*`, `-wp-html-split`, `compat/formatting` | 42, plus 3 follow-ups and 3 speed goals |
+| [unified-operation-api.md](unified-operation-api.md) | `speedyspec-operation*`, `-transport*`, `-rest*` | 44 |
