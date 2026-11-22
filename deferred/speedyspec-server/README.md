@@ -30,6 +30,12 @@ what is still true.
 The kses port (#50, #52, #53, #58) had its own final review. Its six Minor findings, and the speed goals it has
 not yet met, are in [kses.md](kses.md).
 
+### The text formatting port
+
+The port of `formatting.php` (#33, #38, #48, #54, #59, #68) ran as five plans, each with its own final review. Its
+Minor findings, the functions left to port later, the filters still registered from PHP, and the speed goals not yet
+met are in [text-formatting.md](text-formatting.md). Recorded 2026-11-22.
+
 ### The server's own plans
 
 The server itself was built from seven plans in November 2026: the server foundation (merged before #1), managed
@@ -100,3 +106,4 @@ Left out, because they were fixed or ruled on:
 | [release-pipeline.md](release-pipeline.md) | `.github/workflows`, `scripts/release-*`, `README.md` | 10 |
 | [tests-and-deploy.md](tests-and-deploy.md) | `speedyspec-server` and `-server-infra-fs` tests, `deploy/kubernetes` | 4 |
 | [kses.md](kses.md) | `speedyspec-wp-kses*`, `-wp-html-syntax` | 6, plus 2 speed goals |
+| [text-formatting.md](text-formatting.md) | `speedyspec-wp-text*`, `-wp-html-split`, `compat/formatting` | 37, plus 3 follow-ups and 3 speed goals |
