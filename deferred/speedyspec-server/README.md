@@ -25,6 +25,11 @@ One more is left out: it concerned the wording of a review ledger that has since
 Recorded 2026-11-21. Each finding was written at review time; where later code changed part of one, the text says
 what is still true.
 
+### The kses port
+
+The kses port (#50, #52, #53, #58) had its own final review. Its six Minor findings, and the speed goals it has
+not yet met, are in [kses.md](kses.md).
+
 ### The server's own plans
 
 The server itself was built from seven plans in November 2026: the server foundation (merged before #1), managed
@@ -94,3 +99,4 @@ Left out, because they were fixed or ruled on:
 | [admin-gate-and-maintenance.md](admin-gate-and-maintenance.md) | `speedyspec-server-gate`, `-server-presentation` | 3 |
 | [release-pipeline.md](release-pipeline.md) | `.github/workflows`, `scripts/release-*`, `README.md` | 10 |
 | [tests-and-deploy.md](tests-and-deploy.md) | `speedyspec-server` and `-server-infra-fs` tests, `deploy/kubernetes` | 4 |
+| [kses.md](kses.md) | `speedyspec-wp-kses*`, `-wp-html-syntax` | 6, plus 2 speed goals |
