@@ -32,8 +32,8 @@ not yet met, are in [kses.md](kses.md).
 
 ### The text formatting port
 
-The port of `formatting.php` (#33, #38, #48, #54, #59, #68) ran as five plans, each with its own final review. Its
-Minor findings, the functions left to port later, the filters still registered from PHP, and the speed goals not yet
+The port of `formatting.php` (#33, #38, #48, #54, #59, #68, #79) ran as six plans, each with its own final review. Its
+Minor findings, the functions left to port later, `the_content` still fired from PHP, and the speed goals not yet
 met are in [text-formatting.md](text-formatting.md). Recorded 2026-11-22.
 
 ### The server's own plans
@@ -106,4 +106,4 @@ Left out, because they were fixed or ruled on:
 | [release-pipeline.md](release-pipeline.md) | `.github/workflows`, `scripts/release-*`, `README.md` | 10 |
 | [tests-and-deploy.md](tests-and-deploy.md) | `speedyspec-server` and `-server-infra-fs` tests, `deploy/kubernetes` | 4 |
 | [kses.md](kses.md) | `speedyspec-wp-kses*`, `-wp-html-syntax` | 6, plus 2 speed goals |
-| [text-formatting.md](text-formatting.md) | `speedyspec-wp-text*`, `-wp-html-split`, `compat/formatting` | 37, plus 3 follow-ups and 3 speed goals |
+| [text-formatting.md](text-formatting.md) | `speedyspec-wp-text*`, `-wp-html-split`, `compat/formatting` | 42, plus 3 follow-ups and 3 speed goals |

@@ -1,8 +1,9 @@
 # Text formatting
 
 `speedyspec-wp-html-split`, `speedyspec-wp-text*`, `speedyspec-compat` (the `formatting` area). The port of WordPress
-7.1.5's `formatting.php` to Rust, kses excepted. It was built from five plans, merged as #33 (the foundation), #38 and
-#54 (escaping), #48 (content filters), #59 (sanitizers and URLs) and #68 (the PHP surface).
+7.1.5's `formatting.php` to Rust, kses excepted. It was built from six plans, merged as #33 (the foundation), #38 and
+#54 (escaping), #48 (content filters), #59 (sanitizers and URLs), #68 (the PHP surface) and #79 (the filters
+wiring).
 
 The first sections cover work that was left out of the port on purpose: functions to port later, the call sites still
 to wire up, a speed goal that is not met, and a cheaper check the fast path is waiting on. After those come the Minor
@@ -24,15 +25,15 @@ Three more stay outside this port because they belong to other ports: `esc_sql` 
 `wp_pre_kses_block_attributes` goes with the block port (its whole body is `filter_block_content()`), and kses has
 its own port.
 
-## Filters are not registered from Rust yet
+## `the_content` is still fired from PHP
 
-- **Where:** `register_text_filters` in `speedyspec-wp-text`; WordPress's `default-filters.php`, and the code that
-  fires `the_content`.
-- **What happens:** the Rust filters exist, and each native is reached through its PHP name. But `default-filters.php`
-  still registers them in PHP, and `the_content` is still fired from PHP. So each post's chain goes PHP → Rust →
-  PHP for every filter in it.
-- **Suggested fix:** when the template port lands, have it call `register_text_filters` and fire `the_content` from
-  Rust.
+- **Where:** WordPress's `the_content()` and the other template functions that fire formatting's hooks.
+- **What happens:** since the filters-wiring plan (#79), formatting's callbacks added by name are stored as Rust
+  callbacks, so a chain of them runs in Rust once `apply_filters` is called. But `the_content` itself is still fired
+  from PHP, and `default-filters.php` still registers the callbacks from PHP. Rust-only callers use
+  `register_text_filters`.
+- **Suggested fix:** when the template port lands, have it fire `the_content` from Rust, and call
+  `register_text_filters` where `default-filters.php` is ported.
 
 ## Speed goals
 
@@ -349,3 +350,49 @@ From the PHP-surface plan (#68), in `speedyspec-wp-text-php`.
 - **What happens:** each string argument is copied once into a `Value` and again when it is read. The output is
   right; it is only slower.
 - **Suggested fix:** borrow the bytes from the first copy.
+
+## Rust callbacks
+
+From the filters-wiring plan (#79), in `speedyspec-wp-text-php`, `swap.rs`.
+
+### An exit through an adapter is silent only because of the boundary guard
+
+- **Where:** `swap.rs`, `NativeTable::body`; the hooks bridge's `hook_error` in `speedyspec-wp-hooks-php`.
+- **What happens:** the hooks bridge recognises only its own "PHP is unwinding" marker. When an adapter's PHP call
+  (`get_option` under a swapped `convert_smilies`, say) calls `exit()`, the error carries the text or kses marker,
+  which the bridge doesn't know, so it asks for an `Error` to be thrown. Nothing is thrown only because
+  `speedyspec-php` refuses to raise while an exit is pending. An exit through a hook callback (`clean_url`) carries
+  the bridge's own marker and is fine.
+- **Suggested fix:** have the hooks crate export its marker (or a shared one), and add a test of an exit through an
+  adapter under a swapped callback.
+
+### `$wp_current_filter` is stale while a swapped body calls PHP directly
+
+- **Where:** `swap.rs`, `RustCallback::call`.
+- **What happens:** a PHP callable gets the hook store's `$wp_current_filter` written out before it runs. A swapped
+  body that calls PHP through an adapter (`get_option`, `__`, `includes_url`, `wp_is_internal_link`) does not, so
+  that PHP sees the global without the current hook. `current_filter()`, `doing_filter()` and nested callbacks are
+  right; only code that reads `$GLOBALS['wp_current_filter']` directly outside a callback would notice.
+- **Suggested fix:** sync the global around the body if the hooks crate exposes a way, or add the difference to the
+  breaks ledger.
+
+### No Rust-only tests of the swap's types
+
+- **Where:** `NativeTable`, `SwapNativeCallbacks`.
+- **What happens:** both are tested only through the PHP test binary.
+- **Suggested fix:** a Rust test with a fake `NativeCallbacks` and a recording inner handler: the id and value are
+  kept; `Class::method`, non-string values, `id: None` and unknown names pass through; `NativeTable::body` handles
+  case, one backslash, two backslashes and `Other\wpautop`.
+
+### The byte-string branch can't be taken
+
+- **Where:** `SwapNativeCallbacks::swap`, the `Value::Bytes` arm.
+- **What happens:** `Value::Bytes` holds only strings that are not valid UTF-8, and the arm swaps only valid UTF-8,
+  so it never swaps anything.
+- **Suggested fix:** drop the arm, or say so in a comment.
+
+### `swapped_names()` has no `@return` entry
+
+- **Where:** `swap.rs`, `swapped_names`.
+- **What happens:** its doc comment lacks the `@return` line AGENTS.md asks for.
+- **Suggested fix:** add it.
