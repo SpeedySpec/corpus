@@ -69,3 +69,10 @@ with PHP embedded for what remains, and how PHP apps run.
 | [ADR-024](024-static-php-with-every-wordpress-extension.md) | Static PHP 8.5 with every extension WordPress uses | Accepted |
 | [ADR-025](025-supervised-php-worker-pools.md) | PHP runs in supervised worker pools, one request per worker | Accepted; where the pool runs superseded in part |
 | [ADR-026](026-a-writable-site-directory.md) | Each PHP app has a writable site directory over its read-only releases | Accepted |
+
+ADR-027 comes from the SpeedySpec Guide design of 2026-11-20, and the decisions of 2026-11-21 on doc attributes and
+generated Rust docs.
+
+| # | Decision | Status |
+|---|---|---|
+| [ADR-027](027-the-guide-is-not-built-from-docblocks.md) | The guide is written from behaviour and code, never from docblocks | Accepted |
