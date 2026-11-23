@@ -36,6 +36,13 @@ The port of `formatting.php` (#33, #38, #48, #54, #59, #68, #79) ran as six plan
 Minor findings, the functions left to port later, `the_content` still fired from PHP, and the speed goals not yet
 met are in [text-formatting.md](text-formatting.md). Recorded 2026-11-22.
 
+### The WP-Cron port
+
+The port of `cron.php` and `wp-cron.php` (#78, #80, #86, #88) ran as four plans: options in the runtime worker, the
+scheduling API, the runner, and the server's scheduler. A fresh reviewer read each plan's whole branch; Critical and
+Important findings were fixed before merge. Its 28 Minor findings are in [wp-cron.md](wp-cron.md). Recorded
+2026-11-23, checked against main at 7bdfb59.
+
 ### The server's own plans
 
 The server itself was built from seven plans in November 2026: the server foundation (merged before #1), managed
@@ -107,3 +114,4 @@ Left out, because they were fixed or ruled on:
 | [tests-and-deploy.md](tests-and-deploy.md) | `speedyspec-server` and `-server-infra-fs` tests, `deploy/kubernetes` | 4 |
 | [kses.md](kses.md) | `speedyspec-wp-kses*`, `-wp-html-syntax` | 6, plus 2 speed goals |
 | [text-formatting.md](text-formatting.md) | `speedyspec-wp-text*`, `-wp-html-split`, `compat/formatting` | 42, plus 3 follow-ups and 3 speed goals |
+| [wp-cron.md](wp-cron.md) | `speedyspec-wp-cron*`, `-php-runtime`, `-runtime-contract`, `-server` (`php/cron.rs`) | 28 |
