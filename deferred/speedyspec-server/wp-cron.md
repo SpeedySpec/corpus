@@ -5,7 +5,8 @@
 (`php/cron.rs`, `php/handler.rs`, `config.rs`), `compat/cron`. The port of WordPress 7.1.5's `cron.php` and
 `wp-cron.php` to Rust, with a scheduler in the server that calls the app's cron path instead of WordPress's loopback
 request. It was built from four plans, merged as #78 and #80 (options in the worker), #86 (the scheduling API, the
-runner and the server's scheduler) and #88 (release registration).
+runner and the server's scheduler) and #88 (release registration). Multisite cron followed: #109 walked the sites
+in one request, and #110 replaced it with one request per site, booted as that site.
 
 These are the Minor findings from each plan's final whole-branch review. None of them makes an event run twice or
 lose a write on ordinary input: they concern crafted input, hook counts, test coverage, configuration checks and
@@ -191,6 +192,7 @@ documentation.
 - **Where:** `speedyspec-server`, `php/calls.rs` (the `CronCalls` implementation).
 - **What happens:** `?budget=` is appended as is, so a declared path that already has a query becomes `/x?a=1?budget=`.
 - **Suggested fix:** refuse a `?` in `php.cron.path` in the manifest, or append with `&`.
+- **Status:** #110 appends with `&`; remove this entry once it merges.
 
 ### The first call after a managed boot can be a minute late
 
@@ -212,3 +214,46 @@ documentation.
 - **Where:** `speedyspec-server`, `php/handler.rs`.
 - **What happens:** the `Debug` output does not show whether a wake sink is set. Cosmetic.
 - **Suggested fix:** include it.
+
+## Multisite
+
+The main site's cron call answers `{"calls": [...]}`, from `due_sites()`. The server then calls the cron path once per
+due subsite, in rounds bounded by `max_interval`. These are the Minor findings of #110's whole-branch review.
+
+### A site that always answers 409 is logged every round
+
+- **Where:** `speedyspec-server`, `php/cron.rs` (the follow-up loop).
+- **What happens:** a domain-mapped site whose `host` and `path` boot a different blog answers `409` on every call.
+  It is listed again every round, and `php_cron_follow_up_failed` is logged each time, as often as every second while
+  some site reports "due now". It never busy-loops: a `409` runs nothing and reports no wake.
+- **Suggested fix:** rate-limit the warning per query, or have `due_sites()` leave out sites whose call answered `409`.
+
+### Past the answer's size cap, low-id sites come first
+
+- **Where:** `speedyspec-wp-cron-php`, `natives.rs` (`within_answer`).
+- **What happens:** `due_sites()` keeps the leading queries that fit in 512 KiB, in id order. When more sites are due
+  than fit, high-id sites wait until the low-id ones are no longer due. The server's rotation only reorders what it
+  was given.
+- **Suggested fix:** start the list after a rotating offset, kept per request or derived from the time.
+
+### A row with a non-UTF-8 domain or path is dropped silently
+
+- **Where:** `speedyspec-wp-cron-php`, `adapters.rs` (`PhpNetworkSites::sites`).
+- **What happens:** a row whose domain or path reaches Rust as anything but a string is skipped without a log, so that
+  site's cron never runs and nothing says why.
+- **Suggested fix:** accept byte strings, or report the dropped row.
+
+### No end-to-end test of a real follow-up answer or the size limit
+
+- **Where:** `speedyspec-server`, `php/calls.rs`, `tests/cron.rs`.
+- **What happens:** `read_follow_ups` and `cron_uri` have unit tests, and `follow_ups_reach_the_app` runs a fixture
+  endpoint. Nothing runs `due_sites()`'s real output through `FastCgiGateCalls`, and nothing shows an answer near the
+  1 MiB internal limit.
+- **Suggested fix:** an integration test whose endpoint answers a large `calls` list.
+
+### No test of the multisite check when functions are missing
+
+- **Where:** `speedyspec-wp-cron-php`, `adapters.rs` (`PhpNetworkSites::is_multisite`), `tests/network_php.rs`.
+- **What happens:** `is_multisite()` also requires `get_sites` and `get_current_network_id`, but no test boots
+  without them.
+- **Suggested fix:** a check with `is_multisite()` true and `get_sites` undefined, expecting `due_sites() === []`.
