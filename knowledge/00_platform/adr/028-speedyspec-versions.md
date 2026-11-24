@@ -162,6 +162,8 @@ SpeedySpec 1.6 adds a column to wp_posts that WordPress does not have.
 - **SpeedySpec Guide:** shows, for each symbol, the major that deprecates it and the major that removes it.
 - **WordPress plugins and themes:** keep working on SpeedySpec 1; declare `Requires SpeedySpec:` to run on later
   majors.
+- **SpeedySpec plugin site:** a separate site that publishes converted plugins, each proved against every runtime
+  release of the majors it claims.
 
 ---
 
@@ -199,3 +201,5 @@ needs a new decision record.
 - **2026-11-23:** decided, in the SpeedySpec versions discussion.
 - **2026-11-23:** the project owner placed `wp/v2` outside the promise, and gave the previous major 18 months of
   updates after the next major is released.
+- **2026-11-23:** the project owner set where converted plugins are published (a separate SpeedySpec plugin site) and
+  how they are proved (against each runtime version).

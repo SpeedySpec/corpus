@@ -112,6 +112,13 @@ a plugin registers the WordPress way still appears and works.
 9. **The project converts plugins itself, with Claude.** The project owner plans to convert as many free, open-source
    WordPress plugins as possible, all of them if it can (about 30,000), onto the later majors' APIs, using Claude.
    *Trade-off:* conversions at that scale need an automated way to prove each one, per major it claims.
+10. **Converted plugins are published on a separate SpeedySpec plugin site.** The project owner. The site lists each
+    converted plugin with the SpeedySpec majors it supports. *Trade-off:* SpeedySpec runs its own plugin directory, as
+    a site of its own, apart from WordPress.org.
+11. **A converted plugin is proved against every runtime version.** The project owner. Each converted plugin runs
+    against each release of the runtime in the majors its `Requires SpeedySpec:` range claims, and against each new
+    runtime release as it ships. A plugin that fails on a release is not listed for that major until it passes.
+    *Trade-off:* the work grows with plugins times runtime releases, so the runs must be automated and cheap.
 
 ## Implementation Phases
 
@@ -263,12 +270,13 @@ difference cannot matter.
 - **Static admin:** outside the promise; Vue and React majors move only its own version.
 - **SpeedySpec Guide:** shows deprecations and departures per symbol.
 - **Plugins:** keep working on SpeedySpec 1; declare `Requires SpeedySpec:` to run on later majors.
+- **SpeedySpec plugin site (new):** publishes converted plugins, and runs each against every runtime release of the
+  majors it claims.
 
 ## Open Questions
 
-- How a converted plugin reaches sites: a fork in a SpeedySpec plugin directory, a change offered to its author, or
-  both.
-- How a conversion is proved: which recorded or upstream tests a converted plugin must pass on each major it claims.
+- What a run exercises for a plugin that ships no tests of its own: activation, its hooks and routes firing, its admin
+  pages loading, or recorded scenarios written during conversion.
 
 ## Success Criteria
 
@@ -278,6 +286,7 @@ difference cannot matter.
 - Every plugin-observable `breaks.json` entry appears in the register with a workaround.
 - Each WordPress release reaches a 1.x minor.
 - Every removal in SpeedySpec 2 names the 1.x minor that deprecated it.
+- Every plugin listed on the SpeedySpec plugin site passes on every runtime release of each major it claims.
 
 ## Non-Goals
 
