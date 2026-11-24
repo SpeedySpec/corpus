@@ -101,6 +101,16 @@ a plugin registers the WordPress way still appears and works.
    replacement, a full major ahead. *Trade-off:* an API SpeedySpec wants gone lives at least one major longer.
 6. **An undeclared plugin is a SpeedySpec 1 plugin** (designer). *Trade-off:* unconverted plugins do not run on
    SpeedySpec 2 until someone declares them, which is the push toward conversion.
+7. **WordPress's own `wp/v2` REST API is outside the promise.** The project owner. Plugin routes registered with
+   `register_rest_route()` keep working, because that is a PHP API; the shapes of core's `wp/v2` routes may change in
+   a minor. *Trade-off:* a client written against stock `wp/v2` responses is not protected by SpeedySpec 1. The
+   widgets design still keeps `wp/v2` widget shapes, as its own choice.
+8. **Later majors' fix windows are decided per major.** The project owner: how long SpeedySpec 2 or 3 gets fixes once
+   the next major ships depends on how hard the fixes are and how many installs still run it. *Trade-off:* no date a
+   site owner can plan against in advance.
+9. **The project converts plugins itself, with Claude.** The project owner plans to convert as many free, open-source
+   WordPress plugins as possible, all of them if it can (about 30,000), onto the later majors' APIs, using Claude.
+   *Trade-off:* conversions at that scale need an automated way to prove each one, per major it claims.
 
 ## Implementation Phases
 
@@ -117,7 +127,7 @@ every area, port the differences into a 1.x minor, and update the register.
 ### Phase 3: Deprecations in 1.x
 
 As each SpeedySpec API that replaces an old one ships, deprecate the old one in a 1.x minor, naming the replacement.
-Convert plugins: the project's own first, then popular ones.
+Convert plugins with Claude: the project's own first, then the free, open-source plugins, as many as possible.
 
 ### Phase 4: SpeedySpec 2
 
@@ -255,12 +265,9 @@ difference cannot matter.
 
 ## Open Questions
 
-- Does WordPress's own `wp/v2` REST API, as the runtime serves it, sit inside the promise? The widgets design keeps its
-  shapes, but the project owner placed "the REST APIs" outside the promise. The answer decides whether `wp/v2` changes
-  wait for a major.
-- How long the later majors each get fixes once the next one ships. SpeedySpec 1's tracking is open-ended; nothing is
-  decided for 2 or 3.
-- Whether the project converts third-party plugins itself, and how a converted plugin reaches sites.
+- How a converted plugin reaches sites: a fork in a SpeedySpec plugin directory, a change offered to its author, or
+  both.
+- How a conversion is proved: which recorded or upstream tests a converted plugin must pass on each major it claims.
 
 ## Success Criteria
 
