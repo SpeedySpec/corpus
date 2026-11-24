@@ -187,13 +187,6 @@ documentation.
   working and its worker is killed. `max_interval = "0s"` is accepted too.
 - **Suggested fix:** refuse both at parse, naming `app.<id>.php.cron.budget` or `max_interval`.
 
-### A cron path with a query string
-
-- **Where:** `speedyspec-server`, `php/calls.rs` (the `CronCalls` implementation).
-- **What happens:** `?budget=` is appended as is, so a declared path that already has a query becomes `/x?a=1?budget=`.
-- **Suggested fix:** refuse a `?` in `php.cron.path` in the manifest, or append with `&`.
-- **Status:** #110 appends with `&`; remove this entry once it merges.
-
 ### The first call after a managed boot can be a minute late
 
 - **Where:** `speedyspec-server`, `php/cron.rs` (`IDLE`).
