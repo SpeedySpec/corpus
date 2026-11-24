@@ -153,3 +153,5 @@ approves the design. Deleting an area's PHP needs the project owner's confirmati
   Hook API; the Rust port replaces it".
 - **2026-11-19:** the Hook API port shipped in SpeedySpec/speedyspec-server#4.
 - **2026-11-21:** recorded as an ADR, and rewritten in this structure.
+- **2026-11-23:** the documented breaks of rule 4 are now governed by [ADR-028](028-speedyspec-versions.md): in
+  SpeedySpec 1 each one is also listed, with its workaround, in the departures register.
