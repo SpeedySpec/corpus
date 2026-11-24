@@ -68,6 +68,8 @@ compatibility with WordPress and PHP as it can, follows WordPress's releases for
     that it cannot be undone except from a backup.
 11. **Plugins declare the majors they support** with a `Requires SpeedySpec:` header holding a SemVer range, such as
     `1 || 2`. A plugin without the header is a WordPress plugin, and is treated as `1`.
+12. **The previous major gets updates for 18 months after the next major is released**: SpeedySpec 2 for 18 months
+    after SpeedySpec 3, and so on. SpeedySpec 1 is the exception: it follows WordPress with no end date (rule 6).
 
 ### What this looks like
 
@@ -142,6 +144,7 @@ SpeedySpec 1.6 adds a column to wp_posts that WordPress does not have.
 
 **We accept:**
 - Maintaining SpeedySpec 1 against WordPress with no end date.
+- Two majors in support for 18 months after each new major, besides SpeedySpec 1.
 - Adapters for old APIs, written to WordPress's behaviour.
 
 ---
@@ -179,6 +182,7 @@ SpeedySpec 1.6 adds a column to wp_posts that WordPress does not have.
 - [ ] An old API replaced by a new one is an adapter over it, not a second implementation.
 - [ ] A table change lands only in a new major, with its migration.
 - [ ] Each WordPress release has been recorded and ported into SpeedySpec 1.
+- [ ] A new major's release notes give the date the previous major's updates end, 18 months later.
 
 ---
 
@@ -186,13 +190,12 @@ SpeedySpec 1.6 adds a column to wp_posts that WordPress does not have.
 
 A departure in SpeedySpec 1 that WordPress compatibility cannot survive, such as one forced by security, needs the
 project owner's approval and an entry in the register before it ships. Ending SpeedySpec 1's tracking of WordPress
-needs a new decision record. How long SpeedySpec 2 and later majors get fixes once the next major ships is decided per
-major by the project owner, from how hard the fixes are and how many installs still run it.
+needs a new decision record.
 
 ---
 
 ## Revision history
 
 - **2026-11-23:** decided, in the SpeedySpec versions discussion.
-- **2026-11-23:** the project owner placed `wp/v2` outside the promise, and set how later majors' fix windows are
-  decided.
+- **2026-11-23:** the project owner placed `wp/v2` outside the promise, and gave the previous major 18 months of
+  updates after the next major is released.

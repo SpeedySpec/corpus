@@ -105,9 +105,10 @@ a plugin registers the WordPress way still appears and works.
    `register_rest_route()` keep working, because that is a PHP API; the shapes of core's `wp/v2` routes may change in
    a minor. *Trade-off:* a client written against stock `wp/v2` responses is not protected by SpeedySpec 1. The
    widgets design still keeps `wp/v2` widget shapes, as its own choice.
-8. **Later majors' fix windows are decided per major.** The project owner: how long SpeedySpec 2 or 3 gets fixes once
-   the next major ships depends on how hard the fixes are and how many installs still run it. *Trade-off:* no date a
-   site owner can plan against in advance.
+8. **The previous major gets 18 months of updates after the next major ships.** The project owner. When SpeedySpec 3
+   is released, SpeedySpec 2 keeps getting updates for 18 months, then stops; the same for each later major.
+   SpeedySpec 1 is outside this window and follows WordPress for good. *Trade-off:* for 18 months after each new
+   major the project maintains three lines: SpeedySpec 1, the previous major and the new one.
 9. **The project converts plugins itself, with Claude.** The project owner plans to convert as many free, open-source
    WordPress plugins as possible, all of them if it can (about 30,000), onto the later majors' APIs, using Claude.
    *Trade-off:* conversions at that scale need an automated way to prove each one, per major it claims.
@@ -144,7 +145,7 @@ Only SpeedySpec 1 is settled. The lists for 2 and 3 are the direction, not a sch
 the previous one deprecated it.
 
 - **SpeedySpec 1:** removes nothing. Departures are only those in the register.
-- **SpeedySpec 2:** WordPress's deprecated functions and classes (`wp-includes/deprecated.php` and the like); the
+- **SpeedySpec 2:** gets updates until 18 months after SpeedySpec 3 is released. Removes WordPress's deprecated functions and classes (`wp-includes/deprecated.php` and the like); the
   legacy widget system, so `WP_Widget`, `register_sidebar` widgets and the widget options give way to blocks; table
   changes and their migrations; the adapters 1.x deprecated.
 - **SpeedySpec 3:** more of WordPress's old-style APIs, where a SpeedySpec API replaces them; SpeedySpec APIs that
@@ -282,6 +283,7 @@ difference cannot matter.
 
 - A compatibility promise for the CLI, the server, the static admin, the admin REST API or the blog API.
 - A fixed end date for SpeedySpec 1.
+- Updates for a major other than SpeedySpec 1 more than 18 months after the next major's release.
 - Running stock WordPress: SpeedySpec 1 is compatible with WordPress, but never runs WordPress's PHP for a ported area.
 
 ## Alternatives Considered
