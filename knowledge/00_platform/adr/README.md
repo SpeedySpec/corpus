@@ -76,3 +76,10 @@ generated Rust docs.
 | # | Decision | Status |
 |---|---|---|
 | [ADR-027](027-the-guide-is-not-built-from-docblocks.md) | The guide is written from behaviour and code, never from docblocks | Accepted |
+
+ADR-028 comes from the SpeedySpec versions discussion of 2026-11-23, which set what each SpeedySpec major promises
+plugins.
+
+| # | Decision | Status |
+|---|---|---|
+| [ADR-028](028-speedyspec-versions.md) | SpeedySpec 1 stays WordPress; later majors replace it | Accepted |
