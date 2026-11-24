@@ -2,14 +2,18 @@
 
 `speedyspec-operation-contracts`, `speedyspec-operation`, `speedyspec-operation-dispatch`,
 `speedyspec-transport-contracts`, `speedyspec-transport`, `speedyspec-transport-hooks-wp`, `speedyspec-operation-php`,
-`speedyspec-rest-contracts`, `speedyspec-rest`, `speedyspec-rest-php`.
+`speedyspec-rest-contracts`, `speedyspec-rest`, `speedyspec-rest-php`, `speedyspec-xmlrpc-contracts`, `speedyspec-xmlrpc`,
+`speedyspec-xmlrpc-php`, `speedyspec-abilities-contracts`, `speedyspec-abilities`, `speedyspec-abilities-php`.
 
 The API defines each public client operation once, as a protocol-neutral specification. It binds one handler to each
-operation, and lets REST, XML-RPC, Abilities (and later WebSocket and GraphQL) expose it. It was built from four plans:
+operation, and lets REST, XML-RPC, Abilities (and later WebSocket and GraphQL) expose it. It was built from seven plans:
 - #62: the specification core and dispatch;
 - #63: the transport contracts;
 - #72: the PHP facade (its review fixes landed with #81);
-- #81: the REST transport.
+- #81: the REST transport;
+- #95: REST compatibility (the `WP_REST_Server` shim and legacy routes);
+- #111: the XML-RPC transport and the `wp_xmlrpc_server` shim;
+- #113: the Abilities transport and the `WP_Ability` shim.
 
 These are the Minor findings from each plan's final whole-branch review. The Critical and Important findings were fixed
 before merge. None of these breaks ordinary use. They concern edge-case input, WordPress fidelity details, speed, test
@@ -295,3 +299,161 @@ coverage and documentation.
 
 - **Where:** `RestServer::new`, `decode`, `encode`.
 - **What happens:** replacing them needs a code change. Deferred until a second implementation needs them.
+
+## REST compatibility (#95)
+
+### The dispatch write-back skips JSON parameters
+
+- **Where:** the `WP_REST_Server` shim's `dispatch()`, copying a hook's parameter changes back to the `WP_REST_Request`.
+- **What happens:** a `set_param()` on a JSON-bodied request is not written back to the caller's request object.
+- **Suggested fix:** write back every source the parameter lives in, JSON included.
+
+### `rest_invalid_handler` is checked after validation
+
+- **Where:** the legacy handler.
+- **What happens:** a route whose callback is not callable reports invalid parameters first, where WordPress reports
+  the invalid handler.
+- **Suggested fix:** check the callback before validating.
+
+### Validation runs after `rest_request_before_callbacks`
+
+- **Where:** legacy routes' permission step.
+- **What happens:** a legacy route validates and sanitizes inside its permission check, after
+  `rest_request_before_callbacks`. WordPress validates before that hook.
+- **Suggested fix:** validate as a stage before the hook.
+
+### The `legacy-rest/` prefix is not reserved
+
+- **Where:** operation registration.
+- **What happens:** a new-style operation may be named `legacy-rest/…` and be mistaken for a legacy route.
+- **Suggested fix:** refuse the prefix outside the legacy adapter.
+
+### `RestService::server()` recomputes its digest on every call
+
+- **Where:** `RestService::server`.
+- **What happens:** every dispatch formats and hashes every binding to check the cache.
+- **Suggested fix:** keep a generation counter in the binding store.
+
+### The `OPTIONS` `Allow` header
+
+- **Where:** a response answered from `rest_pre_dispatch`.
+- **What happens:** with no matched route, `rest_send_allow_header` adds no `Allow` header. This is the
+  conformance suite's `test_allow_header_sent_on_options_request`.
+- **Suggested fix:** carry the matched route on `RestResponse`.
+
+### Legacy routes belong to the request, not the server instance
+
+- **Where:** the legacy route table.
+- **What happens:** two `WP_REST_Server` instances in one request share one table, and a new one resets it.
+- **Suggested fix:** key the table by server instance.
+
+### A legacy and a new-style route on one path
+
+- **Where:** the route table.
+- **What happens:** the clash is decided by operation name, not by registration order.
+- **Suggested fix:** order by registration.
+
+## XML-RPC transport (#111)
+
+### WordPress's zero date
+
+- **Where:** the codec, and `IXR_Date` conversion.
+- **What happens:** `00000000T00:00:00`, which WordPress's `_convert_date` gives for an empty date, is sent as a
+  `<string>`, and refused when a client sends it.
+- **Suggested fix:** let the zero date through as a date.
+
+### A `wp_xmlrpc_server_class` subclass's overrides on the HTTP path
+
+- **Where:** `serve_request`, through Rust.
+- **What happens:** a subclass's `call()` override never runs, and operation methods skip its `login()` override.
+- **Suggested fix:** route through `$server->call()` when the subclass overrides it, or document the limit.
+
+### A service failure in `serve_request`
+
+- **Where:** `native_serve`.
+- **What happens:** a server that cannot be built throws `RuntimeException`, a PHP fatal, instead of answering a fault.
+- **Suggested fix:** answer a 500 fault, as `call` and `login` do.
+
+### `new wp_xmlrpc_server()` without a service
+
+- **Where:** `native_reset`.
+- **What happens:** with no service attached to the area, constructing the shim throws.
+- **Suggested fix:** make reset a no-op without a service.
+
+### A numeric-string element limit
+
+- **Where:** `Adapter::element_limit`.
+- **What happens:** a filter returning `"50000"` is ignored, where WordPress accepts it.
+- **Suggested fix:** accept numeric strings.
+
+### Numeric-string IDs
+
+- **Where:** operation methods.
+- **What happens:** `<string>5</string>` for an integer field is refused with 400, where WordPress's methods cast it.
+- **Suggested fix:** coerce scalars by the input schema, as the REST transport does.
+
+### The middleware claims nested `xmlrpc.php` paths
+
+- **Where:** `XmlRpcMiddleware`.
+- **What happens:** any path ending `/xmlrpc.php`, a plugin's file included, is served as XML-RPC.
+- **Suggested fix:** match the site root and its configured subdirectory only.
+
+### An empty POST body
+
+- **Where:** `XmlRpcServer::serve`.
+- **What happens:** it answers the parse fault `-32700`, where IXR answers 405.
+- **Suggested fix:** answer 405 for an empty body.
+
+## Abilities transport (#113)
+
+### `stdClass` input to an operation ability
+
+- **Where:** `native_execute` and the value conversion.
+- **What happens:** `( $ability )->execute( (object) [ 'id' => 4 ] )` crosses as a held PHP value and fails validation,
+  where WordPress's `rest_is_object` accepts it.
+- **Suggested fix:** cast `stdClass` and `JsonSerializable` input to arrays for operation abilities.
+
+### `wp_ability_execute_result` output is not re-validated
+
+- **Where:** `OperationSteps::validate_output`.
+- **What happens:** a filter can turn a valid result into one that breaks the operation's output schema, and it is
+  returned. WordPress validates after that filter.
+- **Suggested fix:** validate the filtered output against the output schema.
+
+### Request-scoped memory grows with every execute
+
+- **Where:** the handle table and the legacy ability table.
+- **What happens:** every execute holds the ability and any non-plain value until the request ends, and each new
+  ability object gets its own registry and dispatcher. A long WP-CLI or cron loop holds them all.
+- **Suggested fix:** release a call's handles after its outcome is converted, and reuse an object's handle.
+
+### Messages built in Rust are not translated
+
+- **Where:** `errors::invalid_permissions`, `OperationSteps` ("has invalid input/output").
+- **What happens:** on a localized site, these differ from WordPress's `__()` strings.
+- **Suggested fix:** build them through the PHP adapter with `__()`.
+
+### The default category's description is not translated
+
+- **Where:** `Adapter::register_categories`.
+- **What happens:** `Abilities of %s.` is not wrapped in `__()`.
+- **Suggested fix:** wrap it.
+
+### `Abilities::publish()` of a subscription
+
+- **Where:** `AbilitiesService::abilities`.
+- **What happens:** publishing a subscription is accepted, and the binding is silently dropped.
+- **Suggested fix:** refuse it at `publish()`, or log it.
+
+### A hash collision in legacy ability names
+
+- **Where:** `legacy::operation_name`.
+- **What happens:** two abilities whose slugs match and whose 32-bit hashes collide would share a container binding.
+- **Suggested fix:** key the binding by object, or check before binding.
+
+### The registration hooks are added only at request start
+
+- **Where:** `Adapter::hook()`, from the area's `request_start`.
+- **What happens:** if the Hook API loads after the Abilities area starts, no operation registers as an ability, and
+  nothing is logged.
+- **Suggested fix:** log when `add_action` is missing, or hook lazily.
