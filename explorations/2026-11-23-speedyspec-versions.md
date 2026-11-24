@@ -101,6 +101,24 @@ a plugin registers the WordPress way still appears and works.
    replacement, a full major ahead. *Trade-off:* an API SpeedySpec wants gone lives at least one major longer.
 6. **An undeclared plugin is a SpeedySpec 1 plugin** (designer). *Trade-off:* unconverted plugins do not run on
    SpeedySpec 2 until someone declares them, which is the push toward conversion.
+7. **WordPress's own `wp/v2` REST API is outside the promise.** The project owner. Plugin routes registered with
+   `register_rest_route()` keep working, because that is a PHP API; the shapes of core's `wp/v2` routes may change in
+   a minor. *Trade-off:* a client written against stock `wp/v2` responses is not protected by SpeedySpec 1. The
+   widgets design still keeps `wp/v2` widget shapes, as its own choice.
+8. **The previous major gets 18 months of updates after the next major ships.** The project owner. When SpeedySpec 3
+   is released, SpeedySpec 2 keeps getting updates for 18 months, then stops; the same for each later major.
+   SpeedySpec 1 is outside this window and follows WordPress for good. *Trade-off:* for 18 months after each new
+   major the project maintains three lines: SpeedySpec 1, the previous major and the new one.
+9. **The project converts plugins itself, with Claude.** The project owner plans to convert as many free, open-source
+   WordPress plugins as possible, all of them if it can (about 30,000), onto the later majors' APIs, using Claude.
+   *Trade-off:* conversions at that scale need an automated way to prove each one, per major it claims.
+10. **Converted plugins are published on a separate SpeedySpec plugin site.** The project owner. The site lists each
+    converted plugin with the SpeedySpec majors it supports. *Trade-off:* SpeedySpec runs its own plugin directory, as
+    a site of its own, apart from WordPress.org.
+11. **A converted plugin is proved against every runtime version.** The project owner. Each converted plugin runs
+    against each release of the runtime in the majors its `Requires SpeedySpec:` range claims, and against each new
+    runtime release as it ships. A plugin that fails on a release is not listed for that major until it passes.
+    *Trade-off:* the work grows with plugins times runtime releases, so the runs must be automated and cheap.
 
 ## Implementation Phases
 
@@ -117,7 +135,7 @@ every area, port the differences into a 1.x minor, and update the register.
 ### Phase 3: Deprecations in 1.x
 
 As each SpeedySpec API that replaces an old one ships, deprecate the old one in a 1.x minor, naming the replacement.
-Convert plugins: the project's own first, then popular ones.
+Convert plugins with Claude: the project's own first, then the free, open-source plugins, as many as possible.
 
 ### Phase 4: SpeedySpec 2
 
@@ -134,7 +152,7 @@ Only SpeedySpec 1 is settled. The lists for 2 and 3 are the direction, not a sch
 the previous one deprecated it.
 
 - **SpeedySpec 1:** removes nothing. Departures are only those in the register.
-- **SpeedySpec 2:** WordPress's deprecated functions and classes (`wp-includes/deprecated.php` and the like); the
+- **SpeedySpec 2:** gets updates until 18 months after SpeedySpec 3 is released. Removes WordPress's deprecated functions and classes (`wp-includes/deprecated.php` and the like); the
   legacy widget system, so `WP_Widget`, `register_sidebar` widgets and the widget options give way to blocks; table
   changes and their migrations; the adapters 1.x deprecated.
 - **SpeedySpec 3:** more of WordPress's old-style APIs, where a SpeedySpec API replaces them; SpeedySpec APIs that
@@ -252,15 +270,13 @@ difference cannot matter.
 - **Static admin:** outside the promise; Vue and React majors move only its own version.
 - **SpeedySpec Guide:** shows deprecations and departures per symbol.
 - **Plugins:** keep working on SpeedySpec 1; declare `Requires SpeedySpec:` to run on later majors.
+- **SpeedySpec plugin site (new):** publishes converted plugins, and runs each against every runtime release of the
+  majors it claims.
 
 ## Open Questions
 
-- Does WordPress's own `wp/v2` REST API, as the runtime serves it, sit inside the promise? The widgets design keeps its
-  shapes, but the project owner placed "the REST APIs" outside the promise. The answer decides whether `wp/v2` changes
-  wait for a major.
-- How long the later majors each get fixes once the next one ships. SpeedySpec 1's tracking is open-ended; nothing is
-  decided for 2 or 3.
-- Whether the project converts third-party plugins itself, and how a converted plugin reaches sites.
+- What a run exercises for a plugin that ships no tests of its own: activation, its hooks and routes firing, its admin
+  pages loading, or recorded scenarios written during conversion.
 
 ## Success Criteria
 
@@ -270,11 +286,13 @@ difference cannot matter.
 - Every plugin-observable `breaks.json` entry appears in the register with a workaround.
 - Each WordPress release reaches a 1.x minor.
 - Every removal in SpeedySpec 2 names the 1.x minor that deprecated it.
+- Every plugin listed on the SpeedySpec plugin site passes on every runtime release of each major it claims.
 
 ## Non-Goals
 
 - A compatibility promise for the CLI, the server, the static admin, the admin REST API or the blog API.
 - A fixed end date for SpeedySpec 1.
+- Updates for a major other than SpeedySpec 1 more than 18 months after the next major's release.
 - Running stock WordPress: SpeedySpec 1 is compatible with WordPress, but never runs WordPress's PHP for a ported area.
 
 ## Alternatives Considered

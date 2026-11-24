@@ -42,8 +42,10 @@ compatibility with WordPress and PHP as it can, follows WordPress's releases for
 2. **The promise covers what plugins call in PHP**: WordPress's functions, classes, hooks, globals, constants, options
    and tables, as the runtime serves them, and SpeedySpec's own PHP APIs. The WordPress ports in the server
    workspace and their copies in the CLI count as runtime code for this rule.
-3. **The rest is outside the promise.** The CLI, the server, the static admin, the admin REST API (`wp-admin/v1`) and
-   the blog API each keep their own SemVer, and none of them promises WordPress compatibility.
+3. **The rest is outside the promise.** The CLI, the server, the static admin, the admin REST API (`wp-admin/v1`),
+   the blog API and WordPress's own `wp/v2` REST API each keep their own versioning, and none of them promises
+   WordPress compatibility. `register_rest_route()` is a PHP API and stays inside the promise; the shapes of core's
+   `wp/v2` routes do not.
 4. **The admin REST API and the blog API honour the promise as consumers.** Each declares the SpeedySpec majors it
    supports. Supporting a major means a plugin's use of that major's PHP APIs works through it: a menu page, a
    setting, a meta box or a REST route registered the WordPress way is picked up and acted on. Their own endpoints and
@@ -66,6 +68,8 @@ compatibility with WordPress and PHP as it can, follows WordPress's releases for
     that it cannot be undone except from a backup.
 11. **Plugins declare the majors they support** with a `Requires SpeedySpec:` header holding a SemVer range, such as
     `1 || 2`. A plugin without the header is a WordPress plugin, and is treated as `1`.
+12. **The previous major gets updates for 18 months after the next major is released**: SpeedySpec 2 for 18 months
+    after SpeedySpec 3, and so on. SpeedySpec 1 is the exception: it follows WordPress with no end date (rule 6).
 
 ### What this looks like
 
@@ -140,6 +144,7 @@ SpeedySpec 1.6 adds a column to wp_posts that WordPress does not have.
 
 **We accept:**
 - Maintaining SpeedySpec 1 against WordPress with no end date.
+- Two majors in support for 18 months after each new major, besides SpeedySpec 1.
 - Adapters for old APIs, written to WordPress's behaviour.
 
 ---
@@ -157,6 +162,8 @@ SpeedySpec 1.6 adds a column to wp_posts that WordPress does not have.
 - **SpeedySpec Guide:** shows, for each symbol, the major that deprecates it and the major that removes it.
 - **WordPress plugins and themes:** keep working on SpeedySpec 1; declare `Requires SpeedySpec:` to run on later
   majors.
+- **SpeedySpec plugin site:** a separate site that publishes converted plugins, each proved against every runtime
+  release of the majors it claims.
 
 ---
 
@@ -177,6 +184,7 @@ SpeedySpec 1.6 adds a column to wp_posts that WordPress does not have.
 - [ ] An old API replaced by a new one is an adapter over it, not a second implementation.
 - [ ] A table change lands only in a new major, with its migration.
 - [ ] Each WordPress release has been recorded and ported into SpeedySpec 1.
+- [ ] A new major's release notes give the date the previous major's updates end, 18 months later.
 
 ---
 
@@ -191,3 +199,7 @@ needs a new decision record.
 ## Revision history
 
 - **2026-11-23:** decided, in the SpeedySpec versions discussion.
+- **2026-11-23:** the project owner placed `wp/v2` outside the promise, and gave the previous major 18 months of
+  updates after the next major is released.
+- **2026-11-23:** the project owner set where converted plugins are published (a separate SpeedySpec plugin site) and
+  how they are proved (against each runtime version).
